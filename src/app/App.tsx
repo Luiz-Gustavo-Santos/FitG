@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Activity,
   ArrowUpRight,
-  CalendarDays,
+  CalendarCheck,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -236,7 +236,6 @@ export function App() {
                   <ChevronLeft size={17} />
                 </button>
                 <label className="date-input">
-                  <CalendarDays size={16} />
                   <span className="sr-only">Data dos registros</span>
                   <input
                     aria-label="Data dos registros"
@@ -257,8 +256,13 @@ export function App() {
                   <ChevronRight size={17} />
                 </button>
                 {day !== localDay() && (
-                  <button className="button ghost today-button" onClick={() => setDay(localDay())}>
-                    Hoje
+                  <button
+                    className="icon-button today-button"
+                    aria-label="Hoje"
+                    title="Voltar para hoje"
+                    onClick={() => setDay(localDay())}
+                  >
+                    <CalendarCheck size={18} />
                   </button>
                 )}
               </div>

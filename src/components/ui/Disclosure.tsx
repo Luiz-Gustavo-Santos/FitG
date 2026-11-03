@@ -1,5 +1,21 @@
-import { useId, useState, type ReactNode } from 'react';
+import { createContext, useContext, useId, useState, type ReactNode } from 'react';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
+
+const DisclosureContext = createContext<{
+  activeId: string | null;
+  setActiveId: (id: string | null) => void;
+} | null>(null);
+
+export function DisclosureGroup({ children }: Readonly<{ children: ReactNode }>) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  return (
+    <DisclosureContext value={{ activeId, setActiveId }}>
+      <div data-disclosure-group="" className="disclosure-group">
+        {children}
+      </div>
+    </DisclosureContext>
+  );
+}
 
 export function Disclosure({
   title,
@@ -16,9 +32,11 @@ export function Disclosure({
   className?: string;
   keepMounted?: boolean;
 }>) {
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
   const [visited, setVisited] = useState(false);
   const id = useId();
+  const group = useContext(DisclosureContext);
+  const open = group ? group.activeId === id : localOpen;
   return (
     <section className={`disclosure ${open ? 'is-open' : ''} ${className}`}>
       <h3 className="disclosure-heading">
@@ -30,8 +48,26 @@ export function Disclosure({
           aria-controls={`${id}-content`}
           aria-describedby={summary ? `${id}-summary` : undefined}
           onClick={() => {
-            setOpen(!open);
+            if (group) group.setActiveId(open ? null : id);
+            else setLocalOpen(!open);
             setVisited(true);
+          }}
+          onKeyDown={(event) => {
+            if (!group || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+            const buttons = [
+              ...event.currentTarget
+                .closest('[data-disclosure-group]')!
+                .querySelectorAll<HTMLButtonElement>('.disclosure-trigger'),
+            ];
+            const index = buttons.indexOf(event.currentTarget);
+            let next = index;
+            if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = buttons.length - 1;
+            else
+              next =
+                (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+            buttons[next]?.focus();
+            event.preventDefault();
           }}
         >
           {Icon && <Icon className="disclosure-icon" size={21} />}

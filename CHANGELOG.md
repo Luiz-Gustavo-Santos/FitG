@@ -6,11 +6,17 @@ Versoes do aplicativo seguem SemVer. IndexedDB e backup possuem versoes independ
 
 - Home simplificada em lista de uso diario, sem hero promocional ou grade de indicadores.
 - Refeicoes recolhidas na Home e em Alimentacao; alimentos, porcoes e acoes aparecem ao abrir.
+- Uma refeicao aberta por vez, com navegacao por setas/Home/End e possibilidade de recolher todas. Desktop amplo mostra lista e detalhe lado a lado, sem cabecalho de marca duplicado.
+- Registro de refeicao simplificado para selecao e quantidades; personalizacao completa sob demanda preserva o rascunho. Folha inferior no mobile, data do consumo explicita e ciclo de foco por Tab/Shift+Tab.
+- Quantidade temporariamente invalida durante a digitacao nao interrompe a revisao nem e enviada ao calculo; salvar fica bloqueado ate a correcao. Porcoes desmarcadas ficam desabilitadas e nao impedem registrar os demais alimentos.
+- Menu contextual para editar/excluir planos, com teclado, Escape, retorno de foco, fechamento fora do menu e confirmacao de exclusao.
+- Data compacta sem icone de calendario duplicado e retorno a hoje por controle acessivel, inclusive em 320 px. Campos de formulario com fonte de 16 px e botoes de modal com alvos de pelo menos 44 px.
+- Estado vazio explicito, progresso somente com consumo conhecido e consultas secundarias agrupadas em Resumo e historico; nutrientes ausentes nao viram zero.
 - Detalhes de treinos, plano semanal, graficos, doces, perfil, catalogo, backup e integracoes recolhidos por padrao.
 - Maior contraste de textos secundarios, alvos de toque ampliados e cabecalho sem menu mobile duplicado.
 - Rascunho do perfil preservado ao recolher; validacao nativa de idade inteira corrigida.
 - Navegacao por data reinicia os detalhes fechados sem alterar registros. Banco e backup permanecem no schema 1; nenhuma migracao ou limpeza de dados.
-- Verificacao local: 38 testes, typecheck e build aprovados. As cinco telas foram verificadas em 320, 390 e 1440 px, inicialmente fechadas; os detalhes abertos tambem couberam em 320 px. Abertura por Enter/Espaco conferida no navegador. Nao substitui teste desta interface em iPhone fisico nem homologacao offline da PWA.
+- Verificacao local: 45 testes, typecheck e build aprovados. Playwright MCP conferiu as cinco telas em 320, 430 e 1440 px, inicialmente fechadas e com detalhes expandidos, sem controles fora das bordas. Registro parcial de 388,8 kcal persistiu apos recarregar, sem alterar o plano, e foi desfeito em sessao isolada. Menu por teclado/Escape, retorno de foco, ciclo Tab/Shift+Tab e digitacao caractere a caractere de fracao conferidos no navegador. Nao substitui teste desta interface em iPhone fisico nem homologacao offline da PWA.
 
 ## 0.2.0 - 2026-11-03
 

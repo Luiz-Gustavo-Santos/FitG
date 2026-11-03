@@ -36,13 +36,13 @@ npm run preview
 
 ## Implementado nesta primeira versao
 
-- Interface fitness verde-neon com listas recolhiveis, sidebar desktop, navegacao inferior mobile, safe areas, controles de data e estados vazios. Refeicoes, treinos, graficos, perfil, catalogo e backup mostram detalhes somente ao abrir a respectiva secao.
+- Interface fitness verde-neon com listas recolhiveis, sidebar desktop, navegacao inferior mobile, safe areas e data compacta com retorno a hoje. Todas as secoes iniciam fechadas; apenas uma refeicao fica aberta por vez. No desktop amplo, os detalhes da refeicao aparecem ao lado da lista.
 - Perfil e metas editaveis, seis refeicoes planejadas e semana de treinos de referencia, sem registros historicos pre-fabricados.
 - Catalogo nutricional aproximado e editavel, com fonte/base/unidade. Porcoes sem escolha ou quantidade permanecem desconhecidas.
-- Consumo parcial por alimento, substituicoes, inclusao de alimentos do catalogo, criacao/edicao/exclusao de refeicoes planejadas e desfazer consumo.
+- Registro de consumo abre primeiro selecao e quantidades; personalizacao de alimentos fica sob demanda e preserva os ajustes. No mobile, usa folha inferior com foco contido e controles de toque ampliados. Consumo parcial, substituicoes, inclusao de alimentos, refeicoes planejadas e desfazer continuam disponiveis; edicao/exclusao do plano ficam no menu de opcoes, com confirmacao para excluir.
 - Consumos preservam snapshots; editar o plano ou catalogo nao reescreve historico. Novo registro da mesma refeicao/data substitui o anterior.
 - Treinos manuais com inicio, modalidade, duracao, distancia, frequencia cardiaca, energia informada/tipo, notas e exercicios com series/repeticoes/carga; edicao/exclusao.
-- Home de uso diario com resumo calorico, registro rapido e refeicoes recolhidas. Macros, saldo, peso e historico ficam sob demanda; meta fixa nao repoe automaticamente o treino e saldo exige consumo conhecido e TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
+- Home de uso diario com registro rapido e refeicoes recolhidas. Resumo diferencia ausencia de registros de nutrientes desconhecidos; progresso calorico aparece somente com consumo conhecido e meta valida. Macros, saldo, treino, peso e historico ficam agrupados em Resumo e historico. Meta fixa nao repoe automaticamente o treino; saldo exige consumo conhecido e TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
 - Peso com data/notas, media dos registros de sete dias, variacao, exclusao e graficos de peso, consumo, proteina e frequencia de treino em 7/30 dias.
 - Dias de doces explicitamente registrados, desfazer, calendario, sequencia, recorde e percentual sobre dias registrados. Dias ausentes nao viram dias sem doces.
 - IndexedDB versionado, inicializacao idempotente, validacao com Zod e backup JSON validado/restaurado em transacao atomica apos confirmacao.
@@ -94,6 +94,8 @@ Nao ha fotos nesta versao; portanto o backup inclui todos os registros implement
 ## Verificacao e dependencias
 
 Testes cobrem dominio energetico, porcoes/snapshots, datas invalidas, doces, IndexedDB/backup, GPX/TCX e fluxo da interface. Revisar tambem formulacao de dados desconhecidos e os controles no navegador ao mudar regras.
+
+A revisao de usabilidade foi validada com 45 testes, typecheck e build. No Playwright MCP, as cinco telas couberam em 320, 430 e 1440 px, fechadas e com detalhes expandidos. Registro parcial, alternancia de personalizacao, persistencia apos recarregar, desfazer, teclado/foco e menu contextual foram conferidos em sessao isolada. Digitacao caractere a caractere de uma fracao foi validada sem falha durante o zero temporario; quantidade invalida bloqueia envio, e alimentos desmarcados nao bloqueiam a validacao. Nao certifica teclado virtual, Safari/iPhone fisico, instalacao ou operacao offline da PWA.
 
 A auditoria inicial encontrou vulnerabilidades no executor de testes; o Vitest foi atualizado para elimina-las. Restaram avisos baixos/moderados em dependencias transitivas da toolchain PWA apos `npm audit fix`; `npm audit --omit=dev` nao apontou vulnerabilidades de runtime na verificacao desta entrega. Reavaliar a auditoria ao atualizar dependencias.
 
