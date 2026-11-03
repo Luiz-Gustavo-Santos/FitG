@@ -36,13 +36,13 @@ npm run preview
 
 ## Implementado nesta primeira versao
 
-- Layout fitness verde-neon, sidebar desktop, navegacao inferior mobile, safe areas, controles de data e estados vazios.
+- Interface fitness verde-neon com listas recolhiveis, sidebar desktop, navegacao inferior mobile, safe areas, controles de data e estados vazios. Refeicoes, treinos, graficos, perfil, catalogo e backup mostram detalhes somente ao abrir a respectiva secao.
 - Perfil e metas editaveis, seis refeicoes planejadas e semana de treinos de referencia, sem registros historicos pre-fabricados.
 - Catalogo nutricional aproximado e editavel, com fonte/base/unidade. Porcoes sem escolha ou quantidade permanecem desconhecidas.
 - Consumo parcial por alimento, substituicoes, inclusao de alimentos do catalogo, criacao/edicao/exclusao de refeicoes planejadas e desfazer consumo.
 - Consumos preservam snapshots; editar o plano ou catalogo nao reescreve historico. Novo registro da mesma refeicao/data substitui o anterior.
 - Treinos manuais com inicio, modalidade, duracao, distancia, frequencia cardiaca, energia informada/tipo, notas e exercicios com series/repeticoes/carga; edicao/exclusao.
-- Dashboard reativo, meta fixa sem reposicao automatica do treino e saldo apenas quando existe TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
+- Home de uso diario com resumo calorico, registro rapido e refeicoes recolhidas. Macros, saldo, peso e historico ficam sob demanda; meta fixa nao repoe automaticamente o treino e saldo exige consumo conhecido e TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
 - Peso com data/notas, media dos registros de sete dias, variacao, exclusao e graficos de peso, consumo, proteina e frequencia de treino em 7/30 dias.
 - Dias de doces explicitamente registrados, desfazer, calendario, sequencia, recorde e percentual sobre dias registrados. Dias ausentes nao viram dias sem doces.
 - IndexedDB versionado, inicializacao idempotente, validacao com Zod e backup JSON validado/restaurado em transacao atomica apos confirmacao.

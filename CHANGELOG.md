@@ -2,6 +2,16 @@
 
 Versoes do aplicativo seguem SemVer. IndexedDB e backup possuem versoes independentes.
 
+## Em desenvolvimento
+
+- Home simplificada em lista de uso diario, sem hero promocional ou grade de indicadores.
+- Refeicoes recolhidas na Home e em Alimentacao; alimentos, porcoes e acoes aparecem ao abrir.
+- Detalhes de treinos, plano semanal, graficos, doces, perfil, catalogo, backup e integracoes recolhidos por padrao.
+- Maior contraste de textos secundarios, alvos de toque ampliados e cabecalho sem menu mobile duplicado.
+- Rascunho do perfil preservado ao recolher; validacao nativa de idade inteira corrigida.
+- Navegacao por data reinicia os detalhes fechados sem alterar registros. Banco e backup permanecem no schema 1; nenhuma migracao ou limpeza de dados.
+- Verificacao local: 38 testes, typecheck e build aprovados. As cinco telas foram verificadas em 320, 390 e 1440 px, inicialmente fechadas; os detalhes abertos tambem couberam em 320 px. Abertura por Enter/Espaco conferida no navegador. Nao substitui teste desta interface em iPhone fisico nem homologacao offline da PWA.
+
 ## 0.2.0 - 2026-11-03
 
 ### Corrigido

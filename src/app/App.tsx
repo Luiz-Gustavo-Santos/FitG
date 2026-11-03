@@ -10,14 +10,13 @@ import {
   Dumbbell,
   Home as HomeIcon,
   LoaderCircle,
-  Menu,
   Settings as SettingsIcon,
   ShieldCheck,
   Utensils,
   WifiOff,
   X,
 } from 'lucide-react';
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns';
+import { addDays, parseISO } from 'date-fns';
 import { initialize } from '../db';
 import { AppProvider, useAppData, type Page } from '../hooks/useAppData';
 import { dayLabel, localDay } from '../utils/dates';
@@ -32,7 +31,7 @@ import { Modal } from '../components/ui/Modal';
 import { ActivityEditor, MealEditor, WeightEditor } from '../components/ui/Editors';
 
 const navigation = [
-  { id: 'home', label: 'Home', title: 'Visao geral', icon: HomeIcon },
+  { id: 'home', label: 'Home', title: 'Meu dia', icon: HomeIcon },
   { id: 'nutrition', label: 'Alimentacao', title: 'Alimentacao', icon: Utensils },
   { id: 'training', label: 'Treinos', title: 'Treinos', icon: Dumbbell },
   { id: 'progress', label: 'Evolucao', title: 'Evolucao', icon: Activity },
@@ -57,7 +56,6 @@ export function App() {
   const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
   const [startupError, setStartupError] = useState('');
   const [online, setOnline] = useState(navigator.onLine);
-  const [menu, setMenu] = useState(false);
   useEffect(() => {
     initialize().catch(() =>
       setStartupError(
@@ -79,7 +77,6 @@ export function App() {
   }, [toast]);
   function setPage(next: Page) {
     updatePage(next);
-    setMenu(false);
     window.scrollTo({ top: 0 });
   }
   async function run(action: () => Promise<unknown>, message: string) {
@@ -117,14 +114,6 @@ export function App() {
         <p>Seus dados ficam neste dispositivo.</p>
       </main>
     );
-  const elapsed = Math.max(
-    0,
-    differenceInCalendarDays(parseISO(day), parseISO(data.profile.startDay)),
-  );
-  const duration = Math.max(
-    1,
-    differenceInCalendarDays(parseISO(data.profile.endDay), parseISO(data.profile.startDay)),
-  );
   return (
     <AppProvider
       value={{
@@ -154,7 +143,7 @@ export function App() {
       <a className="skip-link" href="#main">
         Ir para o conteudo
       </a>
-      <aside className={`sidebar ${menu ? 'menu-open' : ''}`}>
+      <aside className="sidebar">
         <a
           className="brand"
           href="#"
@@ -192,24 +181,6 @@ export function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-goal">
-          <span className="eyebrow">ATE {format(parseISO(data.profile.endDay), 'dd/MM')}</span>
-          <h3>Foco no processo.</h3>
-          <p>
-            Constancia transforma
-            <br />
-            intencao em evolucao.
-          </p>
-          <progress
-            aria-label="Periodo da meta"
-            max={duration}
-            value={Math.min(duration, elapsed)}
-          />
-          <div>
-            <span>Seu projeto</span>
-            <strong>{Math.round(Math.min(1, elapsed / duration) * 100)}%</strong>
-          </div>
-        </div>
         <div className="sidebar-bottom">
           <span className="privacy-label">
             <ShieldCheck size={16} />
@@ -225,21 +196,12 @@ export function App() {
           </button>
         </div>
       </aside>
-      {menu && (
-        <button className="menu-backdrop" aria-label="Fechar menu" onClick={() => setMenu(false)} />
-      )}
       <div className="workspace">
         <header className="topbar">
           <div className="header-location">
-            <button
-              className="icon-button mobile-menu"
-              aria-label="Abrir menu"
-              onClick={() => setMenu(true)}
-            >
-              <Menu size={21} />
-            </button>
-            <span>SEU DASHBOARD</span>
-            <ChevronRight size={14} />
+            <span className="header-brand">
+              Fit<span>G</span>
+            </span>
             <strong>{navigation.find((item) => item.id === page)?.title ?? 'Integracoes'}</strong>
           </div>
           <div className="header-status">
@@ -261,49 +223,51 @@ export function App() {
           </div>
         </header>
         <main id="main">
-          <div className="date-toolbar">
-            <span className="date-label">{dayLabel(day)}</span>
-            <div className="date-controls">
-              <button
-                className="icon-button"
-                title="Dia anterior"
-                aria-label="Dia anterior"
-                onClick={() => setDay(localDay(addDays(parseISO(day), -1)))}
-              >
-                <ChevronLeft size={17} />
-              </button>
-              <label className="date-input">
-                <CalendarDays size={16} />
-                <span className="sr-only">Data dos registros</span>
-                <input
-                  aria-label="Data dos registros"
-                  type="date"
-                  required
-                  value={day}
-                  onChange={(event) => {
-                    if (event.target.value) setDay(event.target.value);
-                  }}
-                />
-              </label>
-              <button
-                className="icon-button"
-                title="Proximo dia"
-                aria-label="Proximo dia"
-                onClick={() => setDay(localDay(addDays(parseISO(day), 1)))}
-              >
-                <ChevronRight size={17} />
-              </button>
-              {day !== localDay() && (
-                <button className="button ghost today-button" onClick={() => setDay(localDay())}>
-                  Hoje
+          {page !== 'settings' && page !== 'integrations' && (
+            <div className="date-toolbar">
+              <span className="date-label">{dayLabel(day)}</span>
+              <div className="date-controls">
+                <button
+                  className="icon-button"
+                  title="Dia anterior"
+                  aria-label="Dia anterior"
+                  onClick={() => setDay(localDay(addDays(parseISO(day), -1)))}
+                >
+                  <ChevronLeft size={17} />
                 </button>
-              )}
+                <label className="date-input">
+                  <CalendarDays size={16} />
+                  <span className="sr-only">Data dos registros</span>
+                  <input
+                    aria-label="Data dos registros"
+                    type="date"
+                    required
+                    value={day}
+                    onChange={(event) => {
+                      if (event.target.value) setDay(event.target.value);
+                    }}
+                  />
+                </label>
+                <button
+                  className="icon-button"
+                  title="Proximo dia"
+                  aria-label="Proximo dia"
+                  onClick={() => setDay(localDay(addDays(parseISO(day), 1)))}
+                >
+                  <ChevronRight size={17} />
+                </button>
+                {day !== localDay() && (
+                  <button className="button ghost today-button" onClick={() => setDay(localDay())}>
+                    Hoje
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-          {page === 'home' && <Home />}
-          {page === 'nutrition' && <Nutrition />}
-          {page === 'training' && <Training />}
-          {page === 'progress' && <Progress />}
+          )}
+          {page === 'home' && <Home key={day} />}
+          {page === 'nutrition' && <Nutrition key={day} />}
+          {page === 'training' && <Training key={day} />}
+          {page === 'progress' && <Progress key={day} />}
           {page === 'settings' && <Settings />}
           {page === 'integrations' && <Integrations />}
           <footer className="page-footer">

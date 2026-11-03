@@ -1,104 +1,65 @@
-import {
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  Dumbbell,
-  Flame,
-  Plus,
-  Scale,
-  Target,
-  Utensils,
-  Zap,
-} from 'lucide-react';
+import { Activity, Dumbbell, Plus, Scale, Utensils, Zap } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { useApp } from '../hooks/useAppData';
 import { dailySummary } from '../domain/dashboard';
 import { weeklyPlan } from '../data/initialPlan';
 import { number } from '../utils/dates';
 import { HistoryChart } from '../components/charts/HistoryChart';
+import { Disclosure } from '../components/ui/Disclosure';
+import { MealList } from '../components/nutrition/MealList';
 
 export function Home() {
   const { data, day, setPage, openActivity, openWeight, openMeal } = useApp();
   const { nutrients, intake, intakeStatus, energy, exercise, logs, weight, daysLeft, activities } =
     dailySummary(data, day);
-  const pending = data.meals.filter((meal) => !logs.some((log) => log.mealId === meal.id));
-  const progress = energy.target ? Math.min(100, (nutrients.kcal / energy.target) * 100) : 0;
+  const pending = data.meals.find((meal) => !logs.some((log) => log.mealId === meal.id));
+  const intakeLabels = {
+    missing: 'Sem registros',
+    unknown: 'Nutrientes desconhecidos',
+    partial: 'Consumo parcial',
+    recorded: 'Meta alimentar',
+  };
+  let exerciseLabel = 'Nao informado';
+  if (exercise.value !== null) {
+    exerciseLabel = `${number(exercise.value)} kcal${exercise.incomplete ? ' (parcial)' : ''}`;
+  }
+  let balanceLabel = '--';
+  if (energy.balance !== null) {
+    balanceLabel = `${energy.balance > 0 ? '+' : ''}${number(energy.balance)} kcal`;
+  }
   return (
-    <>
-      <div className="home-greeting">
+    <div className="app-page">
+      <div className="section-heading compact-heading">
+        <h2>Meu dia</h2>
+        <span className="small muted">{logs.length} refeicoes registradas</span>
+      </div>
+      <div className="daily-overview" aria-label="Resumo do dia">
         <div>
-          <span className="eyebrow">SEU PROJETO DE EVOLUCAO</span>
-          <h2>
-            Construa sua <em>melhor versao.</em>
-          </h2>
-          <p>Um dia consistente. Um passo mais perto.</p>
+          <span>Consumo registrado</span>
+          <strong className="daily-intake">{intake === null ? '--' : number(intake)}</strong>
         </div>
-        <div className="goal-count">
-          <span className="status-dot" />
-          {daysLeft > 0 ? (
-            <>
-              <strong>{daysLeft}</strong>
-              <span>dias ate sua meta</span>
-            </>
-          ) : (
-            <>
-              <Target size={19} />
-              <span>Seu historico continua</span>
-            </>
-          )}
+        <div>
+          <span>de {energy.target === null ? '--' : number(energy.target)} kcal</span>
+          <small>{intakeLabels[intakeStatus]}</small>
         </div>
       </div>
-      <div className="dashboard-top">
-        <section className="fuel-panel">
-          <div className="panel-heading">
-            <div className="icon-label">
-              <Flame size={18} />
-              <h3>Energia do dia</h3>
-            </div>
-            <span className="tag">
-              {data.profile.mode === 'fixed' ? 'META FIXA' : 'META DINAMICA'}
-            </span>
-          </div>
-          <div className="fuel-content">
-            <div
-              className="calorie-ring"
-              role="img"
-              aria-label={
-                intake === null
-                  ? 'Consumo nao informado'
-                  : `${number(progress)} por cento da meta calorica registrada`
-              }
-              style={{ '--progress': `${progress}%` } as React.CSSProperties}
-            >
-              <div>
-                <Flame size={23} />
-                <strong>{intake === null ? '--' : number(intake)}</strong>
-                <span>de {energy.target === null ? '?' : number(energy.target)} kcal</span>
-              </div>
-            </div>
-            <div className="fuel-details">
-              <span className="eyebrow">SEU COMBUSTIVEL</span>
-              <h4>
-                {nutrients.kcal === 0 ? 'Pronto para comecar?' : `${number(progress)}% da meta`}
-              </h4>
-              <p>
-                {nutrients.unknown
-                  ? 'Consumo parcial: existem alimentos com nutrientes desconhecidos.'
-                  : logs.length
-                    ? 'Consumo calculado pelas porcoes registradas.'
-                    : 'Suas refeicoes de hoje ainda estao por vir.'}
-              </p>
-              <button
-                className="button primary"
-                onClick={() => (pending[0] ? openMeal(pending[0]) : setPage('nutrition'))}
-              >
-                <Plus size={16} />
-                Registrar refeicao
-              </button>
-            </div>
-          </div>
+      <div className="quick-actions">
+        <button
+          className="button primary"
+          onClick={() => (pending ? openMeal(pending) : setPage('nutrition'))}
+        >
+          <Utensils size={18} />
+          Registrar refeicao
+        </button>
+        <button className="button ghost" onClick={() => openActivity()}>
+          <Plus size={18} />
+          Registrar treino
+        </button>
+      </div>
+      <h3 className="list-heading">Refeicoes</h3>
+      <MealList />
+      <div className="section-list">
+        <Disclosure title="Nutrientes e energia" summary="Macros, meta e saldo" icon={Zap}>
           <div className="macro-bars">
             {(
               [
@@ -124,171 +85,88 @@ export function Home() {
               </div>
             ))}
           </div>
-        </section>
-        <section className="balance-panel">
-          <div className="panel-heading">
-            <div className="icon-label">
-              <Zap size={18} />
-              <h3>Energy Balance</h3>
-            </div>
-            <span className="small muted">kcal</span>
-          </div>
-          <div className="balance-row">
-            <span>
-              <ArrowDownRight size={16} />
-              Consumo registrado
-            </span>
-            <strong>
-              {intake === null
-                ? intakeStatus === 'unknown'
-                  ? 'Desconhecido'
-                  : 'Sem registros'
-                : `${number(intake)}${nutrients.unknown > 0 ? ' (parcial)' : ''}`}
-            </strong>
-          </div>
-          <div className="balance-row">
-            <span>
-              <Target size={16} />
-              Meta alimentar
-            </span>
-            <strong>{energy.target === null ? 'Nao definida' : number(energy.target)}</strong>
-          </div>
-          <div className="balance-row">
-            <span>
-              <Dumbbell size={16} />
-              Exercicio ativo
-            </span>
-            <strong>
-              {exercise.value === null
-                ? 'Nao informado'
-                : `${number(exercise.value)}${exercise.incomplete ? '*' : ''}`}
-            </strong>
-          </div>
-          <div className="balance-row">
-            <span>
-              <Flame size={16} />
-              TDEE estimado
-            </span>
-            <strong>{energy.tdee === null ? 'Nao informado' : number(energy.tdee)}</strong>
-          </div>
-          <div className="balance-total">
+          <dl className="detail-list">
             <div>
-              <span>Saldo energetico{energy.balance !== null ? ' parcial' : ''}</span>
-              <strong>
-                {energy.balance === null
-                  ? '--'
-                  : `${energy.balance > 0 ? '+' : ''}${number(energy.balance)}`}
-                <small>
-                  {energy.balance === null
-                    ? energy.tdee === null
-                      ? ' TDEE necessario'
-                      : ' Consumo necessario'
-                    : ' kcal'}
-                </small>
-              </strong>
+              <dt>Meta alimentar</dt>
+              <dd>{energy.target === null ? 'Nao definida' : `${number(energy.target)} kcal`}</dd>
             </div>
-            <ArrowUpRight size={24} />
-          </div>
+            <div>
+              <dt>Exercicio ativo</dt>
+              <dd>{exerciseLabel}</dd>
+            </div>
+            <div>
+              <dt>Gasto diario total (TDEE)</dt>
+              <dd>{energy.tdee === null ? 'Nao informado' : `${number(energy.tdee)} kcal`}</dd>
+            </div>
+            <div>
+              <dt>Saldo energetico parcial</dt>
+              <dd>{balanceLabel}</dd>
+            </div>
+          </dl>
           <p className="method-note">
-            Ingestao registrada menos gasto diario total (TDEE). O saldo nao confirma o fechamento
-            do dia.{' '}
+            Ingestao registrada menos gasto diario total (TDEE). Sem consumo conhecido ou TDEE, o
+            saldo e desconhecido. Nao representa o fechamento do dia.{' '}
             {data.profile.mode === 'fixed'
               ? 'O treino nao aumenta a meta fixa.'
               : 'A meta dinamica requer atividade incremental confirmada.'}{' '}
             {data.profile.tdeeSource && `Fonte TDEE: ${data.profile.tdeeSource}.`}
           </p>
-        </section>
-      </div>
-      <div className="metric-grid">
-        {[
-          {
-            icon: Utensils,
-            label: 'Refeicoes registradas',
-            value: `${logs.length}`,
-            unit: 'registros',
-            detail: 'Seu ritmo de hoje',
-            action: () => setPage('nutrition'),
-          },
-          {
-            icon: Dumbbell,
-            label: 'Treinos do dia',
-            value: `${activities.length}`,
-            unit: 'treinos',
-            detail: weeklyPlan[parseISO(day).getDay()],
-            action: () => setPage('training'),
-          },
-          {
-            icon: Scale,
-            label: 'Ultimo peso registrado',
-            value: weight ? number(weight.kg, 1) : '--',
-            unit: 'kg',
-            detail: weight
-              ? `Em ${weight.day.split('-').reverse().join('/')}`
-              : 'Ainda sem registro',
-            action: openWeight,
-          },
-          {
-            icon: Target,
-            label: 'Objetivo de peso',
-            value: number(data.profile.goalWeight, 1),
-            unit: 'kg',
-            detail: `Referencia inicial: ${data.profile.initialWeight} kg`,
-            action: () => setPage('settings'),
-          },
-        ].map((metric) => (
-          <button className="metric-card" key={metric.label} onClick={metric.action}>
-            <div>
-              <metric.icon size={18} />
-              <ArrowUpRight size={15} />
-            </div>
-            <span className="metric-label">{metric.label}</span>
-            <strong>
-              {metric.value}
-              <small>{metric.unit}</small>
-            </strong>
-            <span className="metric-detail">{metric.detail}</span>
-          </button>
-        ))}
-      </div>
-      <div className="dashboard-bottom">
-        <HistoryChart />
-        <section className="daily-plan">
-          <div className="panel-heading">
-            <h3>No seu radar</h3>
-            <button
-              className="icon-button"
-              title="Ver alimentacao"
-              onClick={() => setPage('nutrition')}
-            >
-              <ArrowRight size={19} />
+        </Disclosure>
+        <Disclosure
+          title="Treino do dia"
+          summary={`${activities.length} registrados - ${weeklyPlan[parseISO(day).getDay()]}`}
+          icon={Dumbbell}
+        >
+          {activities.length === 0 && <p className="muted">Nenhum treino registrado.</p>}
+          <div className="action-row">
+            <button className="button primary" onClick={() => openActivity()}>
+              <Plus size={17} />
+              Registrar treino
+            </button>
+            <button className="button ghost" onClick={() => setPage('training')}>
+              Ver treinos
             </button>
           </div>
-          {pending.slice(0, 3).map((meal) => (
-            <button className="pending-meal" key={meal.id} onClick={() => openMeal(meal)}>
-              <span className="pending-time">{meal.time}</span>
-              <div>
-                <strong>{meal.name}</strong>
-                <small>Refeicao planejada</small>
-              </div>
-              <ChevronRight size={17} />
-            </button>
-          ))}
-          {pending.length === 0 && (
-            <p className="muted">
-              <Check size={18} />
-              Todas as refeicoes registradas.
-            </p>
-          )}
-          <button className="today-training" onClick={() => openActivity()}>
-            <Dumbbell size={24} />
+        </Disclosure>
+        <Disclosure
+          title="Peso e objetivo"
+          summary={weight ? `${number(weight.kg, 1)} kg registrados` : 'Sem pesagem registrada'}
+          icon={Scale}
+        >
+          <dl className="detail-list">
             <div>
-              <span className="eyebrow">PLANO DE HOJE</span>
-              <strong>{weeklyPlan[parseISO(day).getDay()]}</strong>
+              <dt>Ultimo peso</dt>
+              <dd>
+                {weight
+                  ? `${number(weight.kg, 1)} kg em ${weight.day.split('-').reverse().join('/')}`
+                  : 'Nao registrado'}
+              </dd>
             </div>
-            <Plus size={18} />
-          </button>
-        </section>
+            <div>
+              <dt>Peso de referencia</dt>
+              <dd>{number(data.profile.goalWeight, 1)} kg</dd>
+            </div>
+            <div>
+              <dt>Prazo da meta</dt>
+              <dd>
+                {daysLeft > 0 ? `${daysLeft} dias` : 'Periodo encerrado; historico preservado'}
+              </dd>
+            </div>
+          </dl>
+          <div className="action-row">
+            <button className="button primary" onClick={openWeight}>
+              <Plus size={17} />
+              Registrar peso
+            </button>
+            <button className="button ghost" onClick={() => setPage('settings')}>
+              Editar meta
+            </button>
+          </div>
+        </Disclosure>
+        <Disclosure title="Historico" summary="Consumo e gasto diario estimado" icon={Activity}>
+          <HistoryChart />
+        </Disclosure>
       </div>
-    </>
+    </div>
   );
 }

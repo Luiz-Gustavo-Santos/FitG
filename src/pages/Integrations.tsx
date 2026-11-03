@@ -5,6 +5,7 @@ import { db } from '../db';
 import { prepareImport, reviewImport } from '../domain/activities';
 import { number } from '../utils/dates';
 import type { Activity } from '../types';
+import { Disclosure } from '../components/ui/Disclosure';
 
 export function Integrations() {
   const { data, run, setPage } = useApp();
@@ -55,44 +56,31 @@ export function Integrations() {
     worker.postMessage(file);
   }
   return (
-    <>
+    <div className="app-page">
       <button className="button ghost back-button" onClick={() => setPage('settings')}>
         <ArrowLeft size={16} />
         Perfil
       </button>
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">SEUS DADOS, SEM ATALHOS</span>
-          <h2>
-            Conexoes com transparencia<span className="accent">.</span>
-          </h2>
-        </div>
+      <div className="section-heading compact-heading">
+        <h2>Integracoes</h2>
       </div>
-      <div className="integration-status">
-        <section>
-          <Link2 size={25} />
-          <div>
-            <h3>Strava</h3>
-            <span className="tag">NAO CONFIGURADA</span>
-            <p>
-              A conexao OAuth depende de um servico seguro para troca e renovacao de tokens. Nenhuma
-              conta conectada.
-            </p>
-          </div>
-        </section>
-        <section>
-          <Watch size={25} />
-          <div>
-            <h3>Apple Health</h3>
-            <span className="tag neutral">IOS NATIVO NECESSARIO</span>
-            <p>
-              O navegador nao acessa HealthKit. XML/ZIP Apple Health e FIT ainda nao sao suportados
-              nesta versao.
-            </p>
-          </div>
-        </section>
-      </div>
-      <section className="section-block">
+      <Disclosure title="Strava" summary="Nao configurada" icon={Link2}>
+        <p>
+          A conexao OAuth depende de um servico seguro para troca e renovacao de tokens. Nenhuma
+          conta conectada.
+        </p>
+      </Disclosure>
+      <Disclosure title="Apple Health" summary="Requer aplicativo iOS nativo" icon={Watch}>
+        <p>
+          O navegador nao acessa HealthKit. XML/ZIP Apple Health e FIT ainda nao sao suportados
+          nesta versao.
+        </p>
+      </Disclosure>
+      <Disclosure
+        title="Importacao local de atividades"
+        summary="Arquivos GPX e TCX - sem upload"
+        icon={FileUp}
+      >
         <div className="section-heading compact">
           <div>
             <h3>Importacao local de atividades</h3>
@@ -137,7 +125,7 @@ export function Integrations() {
           nao importadas. TCX: distancia, calorias e FC media apenas quando presentes. Calorias TCX
           entram com tipo desconhecido, sem somar a energia ativa ate voce confirmar o tipo.
         </p>
-      </section>
+      </Disclosure>
       {activities.length > 0 && (
         <section>
           <div className="section-heading compact">
@@ -232,6 +220,6 @@ export function Integrations() {
           </div>
         </section>
       )}
-    </>
+    </div>
   );
 }

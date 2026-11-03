@@ -1,9 +1,19 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, Download, FileUp, Save, ShieldCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  Download,
+  FileUp,
+  Link2,
+  Save,
+  ShieldCheck,
+  UserRound,
+  Utensils,
+} from 'lucide-react';
 import { db, backupSchema, exportBackup, restoreBackup } from '../db';
 import { useApp } from '../hooks/useAppData';
 import { foodSchema, profileSchema } from '../types';
 import { Modal } from '../components/ui/Modal';
+import { Disclosure } from '../components/ui/Disclosure';
 
 export function Settings() {
   const { data, run, confirm, setPage } = useApp();
@@ -49,107 +59,113 @@ export function Settings() {
     }, 'Backup exportado. Guarde-o em um local seguro.');
   }
   return (
-    <>
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">DO SEU JEITO</span>
-          <h2>
-            Seu perfil. Suas metas<span className="accent">.</span>
-          </h2>
-        </div>
+    <div className="app-page">
+      <div className="section-heading compact-heading">
+        <h2>Perfil</h2>
       </div>
-      <form className="settings-form" key={JSON.stringify(data.profile)} onSubmit={saveProfile}>
-        <div className="form-grid three">
-          <label>
-            Nome
-            <input name="name" required defaultValue={data.profile.name} />
-          </label>
-          {(
-            [
-              ['age', 'Idade (anos)'],
-              ['height', 'Altura (cm)'],
-              ['initialWeight', 'Peso inicial de referencia (kg)'],
-              ['goalWeight', 'Peso-alvo (kg)'],
-              ['kcal', 'Meta fixa (kcal/dia)'],
-              ['protein', 'Proteina (g/dia)'],
-              ['carbs', 'Carboidratos (g/dia)'],
-              ['fat', 'Gorduras (g/dia)'],
-            ] as const
-          ).map(([key, label]) => (
-            <label key={key}>
-              {label}
+      <Disclosure
+        title="Perfil e metas"
+        summary={`${data.profile.name} - ${data.profile.kcal} kcal/dia`}
+        icon={UserRound}
+        keepMounted
+      >
+        <form className="settings-form" key={JSON.stringify(data.profile)} onSubmit={saveProfile}>
+          <div className="form-grid three">
+            <label>
+              Nome
+              <input name="name" required defaultValue={data.profile.name} />
+            </label>
+            {(
+              [
+                ['age', 'Idade (anos)'],
+                ['height', 'Altura (cm)'],
+                ['initialWeight', 'Peso inicial de referencia (kg)'],
+                ['goalWeight', 'Peso-alvo (kg)'],
+                ['kcal', 'Meta fixa (kcal/dia)'],
+                ['protein', 'Proteina (g/dia)'],
+                ['carbs', 'Carboidratos (g/dia)'],
+                ['fat', 'Gorduras (g/dia)'],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  required
+                  name={key}
+                  type="number"
+                  min={key === 'age' ? 1 : 0.1}
+                  step={key === 'age' ? 1 : 0.1}
+                  defaultValue={data.profile[key]}
+                />
+              </label>
+            ))}
+            <label>
+              Inicio
+              <input name="startDay" type="date" required defaultValue={data.profile.startDay} />
+            </label>
+            <label>
+              Data-alvo
+              <input name="endDay" type="date" required defaultValue={data.profile.endDay} />
+            </label>
+          </div>
+          <h3 className="form-subtitle">Gasto diario total (opcional)</h3>
+          <p className="muted small">
+            Estimativa informada por voce. Inclui atividades habituais; nao sera somada novamente
+            aos treinos. Sem TDEE, o saldo fica desconhecido.
+          </p>
+          <div className="form-grid">
+            <label>
+              TDEE (kcal/dia)
               <input
-                required
-                name={key}
+                name="tdee"
                 type="number"
-                min="0.1"
-                step={key === 'age' ? 1 : 0.1}
-                defaultValue={data.profile[key]}
+                min="1"
+                defaultValue={data.profile.tdee ?? ''}
+                placeholder="Nao informado"
               />
             </label>
-          ))}
-          <label>
-            Inicio
-            <input name="startDay" type="date" required defaultValue={data.profile.startDay} />
-          </label>
-          <label>
-            Data-alvo
-            <input name="endDay" type="date" required defaultValue={data.profile.endDay} />
-          </label>
-        </div>
-        <h3 className="form-subtitle">Gasto diario total (opcional)</h3>
-        <p className="muted small">
-          Estimativa informada por voce. Inclui atividades habituais; nao sera somada novamente aos
-          treinos. Sem TDEE, o saldo fica desconhecido.
-        </p>
-        <div className="form-grid">
-          <label>
-            TDEE (kcal/dia)
-            <input
-              name="tdee"
-              type="number"
-              min="1"
-              defaultValue={data.profile.tdee ?? ''}
-              placeholder="Nao informado"
-            />
-          </label>
-          <label>
-            Fonte / metodologia
-            <input
-              name="tdeeSource"
-              defaultValue={data.profile.tdeeSource}
-              placeholder="Ex.: estimativa do profissional de saude"
-            />
-          </label>
-        </div>
-        <p className="muted small">
-          Metas sao referencias editaveis, nao prescricao medica.{' '}
-          {data.profile.mode === 'fixed'
-            ? 'Modo atual: meta fixa; atividade fisica nao altera automaticamente a meta alimentar.'
-            : 'Modo atual: dinamico, sem configuracao completa nesta versao. Ative a meta fixa para recuperar o calculo da meta.'}
-        </p>
-        <div className="form-actions">
-          {data.profile.mode === 'dynamic' && (
-            <button
-              type="button"
-              className="button ghost"
-              onClick={() =>
-                confirm(
-                  `Usar meta fixa de ${data.profile.kcal} kcal? O historico e os demais dados serao preservados.`,
-                  () => db.profile.update('profile', { mode: 'fixed' }),
-                )
-              }
-            >
-              Usar meta fixa
+            <label>
+              Fonte / metodologia
+              <input
+                name="tdeeSource"
+                defaultValue={data.profile.tdeeSource}
+                placeholder="Ex.: estimativa do profissional de saude"
+              />
+            </label>
+          </div>
+          <p className="muted small">
+            Metas sao referencias editaveis, nao prescricao medica.{' '}
+            {data.profile.mode === 'fixed'
+              ? 'Modo atual: meta fixa; atividade fisica nao altera automaticamente a meta alimentar.'
+              : 'Modo atual: dinamico, sem configuracao completa nesta versao. Ative a meta fixa para recuperar o calculo da meta.'}
+          </p>
+          <div className="form-actions">
+            {data.profile.mode === 'dynamic' && (
+              <button
+                type="button"
+                className="button ghost"
+                onClick={() =>
+                  confirm(
+                    `Usar meta fixa de ${data.profile.kcal} kcal? O historico e os demais dados serao preservados.`,
+                    () => db.profile.update('profile', { mode: 'fixed' }),
+                  )
+                }
+              >
+                Usar meta fixa
+              </button>
+            )}
+            <button className="button primary" disabled={saving}>
+              <Save size={17} />
+              Salvar perfil
             </button>
-          )}
-          <button className="button primary" disabled={saving}>
-            <Save size={17} />
-            Salvar perfil
-          </button>
-        </div>
-      </form>
-      <section className="section-block">
+          </div>
+        </form>
+      </Disclosure>
+      <Disclosure
+        title="Backup e privacidade"
+        summary="Dados locais neste navegador"
+        icon={ShieldCheck}
+      >
         <div className="section-heading compact">
           <div>
             <h3>Seus dados ficam com voce</h3>
@@ -168,10 +184,6 @@ export function Settings() {
           <button className="button ghost" onClick={() => inputRef.current?.click()}>
             <FileUp size={17} />
             Restaurar backup
-          </button>
-          <button className="button ghost" onClick={() => setPage('integrations')}>
-            Integracoes
-            <ArrowRight size={17} />
           </button>
         </div>
         <input
@@ -198,8 +210,12 @@ export function Settings() {
           Sem telemetria, upload ou sincronizacao implicita. Backup contem dados de saude:
           compartilhe apenas com quem voce autorizar.
         </p>
-      </section>
-      <section className="section-block">
+      </Disclosure>
+      <Disclosure
+        title="Catalogo nutricional"
+        summary={`${data.foods.length} alimentos - valores editaveis`}
+        icon={Utensils}
+      >
         <div className="section-heading compact">
           <div>
             <h3>Catalogo nutricional</h3>
@@ -219,7 +235,14 @@ export function Settings() {
             </button>
           ))}
         </div>
-      </section>
+      </Disclosure>
+      <Disclosure title="Integracoes" summary="Importacao local GPX e TCX" icon={Link2}>
+        <button className="button ghost" onClick={() => setPage('integrations')}>
+          <FileUp size={17} />
+          Importar atividades
+          <ArrowRight size={17} />
+        </button>
+      </Disclosure>
       {food && (
         <Modal title="Editar alimento" onClose={() => setFoodId(null)}>
           <form
@@ -283,6 +306,6 @@ export function Settings() {
           </form>
         </Modal>
       )}
-    </>
+    </div>
   );
 }

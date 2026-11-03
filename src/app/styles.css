@@ -9,7 +9,7 @@
   --surface: #111a16;
   --card: #15211b;
   --line: #26362d;
-  --muted: #92a69a;
+  --muted: #b2c3b9;
   --lime: #b6ff4d;
   --green: #39ff88;
   --mint: #00c896;
@@ -22,7 +22,7 @@
 }
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
 }
 button,
 input,
@@ -2053,6 +2053,291 @@ legend {
   }
   .portion-amount {
     width: 52px;
+  }
+}
+.app-page {
+  max-width: 880px;
+  margin-inline: auto;
+  min-width: 0;
+}
+#main {
+  background-image: none;
+}
+.header-location .header-brand {
+  display: inline;
+  color: var(--lime);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+.header-brand > span {
+  color: var(--green);
+}
+.workspace .date-toolbar {
+  max-width: 880px;
+  margin: 0 auto 18px;
+}
+.date-controls .icon-button,
+.icon-button {
+  width: 44px;
+  min-height: 44px;
+}
+.workspace .date-input input {
+  min-height: 42px;
+  font-size: 13px;
+  width: 135px;
+}
+.workspace .button {
+  min-height: 46px;
+  font-size: 13px;
+}
+.compact-heading {
+  gap: 12px;
+  margin: 0 0 16px;
+  align-items: center;
+  animation: none;
+}
+.section-heading.compact-heading h2 {
+  font-size: 30px;
+}
+.daily-overview {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  padding-bottom: 18px;
+}
+.daily-overview > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.daily-overview span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.daily-intake {
+  color: var(--lime);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 42px;
+  line-height: 1;
+}
+.daily-overview small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.quick-actions .button {
+  padding: 10px 8px;
+}
+.list-heading {
+  font-size: 13px;
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+.meal-list {
+  border-top: 1px solid var(--line);
+}
+.section-list {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.disclosure {
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.disclosure.is-open {
+  background: var(--surface);
+}
+.disclosure-heading {
+  margin: 0;
+}
+.disclosure-trigger {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 76px;
+  padding: 15px 12px;
+  text-align: left;
+  border-radius: 0;
+}
+.disclosure-trigger:hover {
+  background: #b6ff4d08;
+}
+.disclosure-trigger:focus-visible {
+  outline-offset: -3px;
+}
+.disclosure-icon {
+  color: var(--lime);
+}
+.meal-recorded .disclosure-icon {
+  color: var(--green);
+}
+.disclosure-label {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.disclosure-label > span {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.disclosure-label small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.disclosure-chevron {
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.is-open > .disclosure-heading .disclosure-chevron {
+  color: var(--lime);
+  transform: rotate(180deg);
+}
+.disclosure-content:not([hidden]) {
+  padding: 0 16px 18px;
+}
+.disclosure-content[hidden] {
+  display: none;
+}
+.disclosure-content > p {
+  font-size: 13px;
+}
+.disclosure-content .food-list {
+  min-height: 0;
+  margin: 0 0 16px;
+}
+.meal-list .food-list li {
+  font-size: 13px;
+  gap: 12px;
+}
+.meal-list .food-list li > span:first-child {
+  overflow-wrap: anywhere;
+}
+.meal-plan-actions,
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.meal-plan-actions {
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.detail-list {
+  margin: 12px 0;
+  font-size: 13px;
+}
+.detail-list > div,
+.weekly-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.detail-list dt {
+  color: var(--muted);
+}
+.detail-list dd {
+  margin: 0;
+  text-align: right;
+  max-width: 60%;
+  overflow-wrap: anywhere;
+}
+.weekly-list {
+  font-size: 13px;
+}
+.weekly-list > div > span {
+  color: var(--muted);
+}
+.weekly-list strong {
+  text-align: right;
+}
+.weekly-list .selected strong {
+  color: var(--lime);
+}
+.disclosure-content .chart-section,
+.disclosure-content .settings-form {
+  padding: 12px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.disclosure-content .summary-strip {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.empty-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.workspace .page-footer {
+  max-width: 880px;
+  margin-inline: auto;
+}
+@media (max-width: 700px) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+  .header-location > strong,
+  .header-status .header-divider,
+  .header-status .avatar {
+    display: none;
+  }
+  .date-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+  .date-label {
+    display: none;
+  }
+  .app-page .compact-heading {
+    flex-direction: row;
+    align-items: center;
+  }
+  .compact-heading > .small {
+    text-align: right;
+    max-width: 50%;
+  }
+  .section-heading.compact-heading h2 {
+    font-size: 28px;
+  }
+  .disclosure-trigger {
+    padding-inline: 8px;
+  }
+  .disclosure-content:not([hidden]) {
+    padding-inline: 10px;
+  }
+  .quick-actions .button {
+    font-size: 12px;
+    gap: 6px;
+  }
+  .bottom-nav button {
+    min-height: 52px;
+    font-size: 10px;
   }
 }
 .app-update {
