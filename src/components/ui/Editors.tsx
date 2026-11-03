@@ -1,5 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowLeft, Check, Plus, Save, SlidersHorizontal, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Beef,
+  Check,
+  Droplets,
+  Flame,
+  Plus,
+  Save,
+  SlidersHorizontal,
+  Trash2,
+  Wheat,
+} from 'lucide-react';
 import { db } from '../../db';
 import { useApp } from '../../hooks/useAppData';
 import {
@@ -9,27 +20,41 @@ import {
   weightSchema,
   type Activity,
   type Meal,
+  type MealLog,
   type Portion,
 } from '../../types';
-import { snapshot, totals } from '../../domain/nutrition';
+import { resizeConsumedItem, snapshot, totals } from '../../domain/nutrition';
 import { number } from '../../utils/dates';
 import { format, parseISO } from 'date-fns';
 import { Modal } from './Modal';
+import { createId } from '../../utils/ids';
 
 export function MealEditor({
   meal,
   plan,
+  log,
   onClose,
-}: {
+}: Readonly<{
   meal: Meal;
   plan: boolean;
+  log?: MealLog;
   onClose: () => void;
-}) {
+}>) {
   const { data, day, run } = useApp();
-  const [name, setName] = useState(meal.name);
+  const [name, setName] = useState(log?.name ?? meal.name);
   const [time, setTime] = useState(meal.time);
-  const [items, setItems] = useState<Portion[]>(structuredClone(meal.items));
-  const [selected, setSelected] = useState(() => new Set(meal.items.map((item) => item.id)));
+  const [items, setItems] = useState<Portion[]>(() =>
+    log
+      ? log.items.map((item, index) => ({
+          id: `recorded-${index}`,
+          name: item.name,
+          foodId: null,
+          amount: item.amount,
+        }))
+      : structuredClone(meal.items),
+  );
+  const [selected, setSelected] = useState(() => new Set(items.map((item) => item.id)));
+  const originals = new Map(log?.items.map((item, index) => [`recorded-${index}`, item]) ?? []);
   const [saving, setSaving] = useState(false);
   const [customizing, setCustomizing] = useState(plan);
   const update = (id: string, patch: Partial<Portion>) =>
@@ -38,10 +63,34 @@ export function MealEditor({
   const invalidAmounts = (plan ? items : chosen).some(
     (item) => item.amount !== null && (!Number.isFinite(item.amount) || item.amount <= 0),
   );
-  const summary = invalidAmounts ? null : totals(snapshot(chosen, data.foods));
+  const consumedItems = invalidAmounts
+    ? null
+    : chosen.map((item) => {
+        const original = originals.get(item.id);
+        return original && item.foodId === null
+          ? resizeConsumedItem(original, item.amount)
+          : snapshot([item], data.foods)[0];
+      });
+  const summary = consumedItems === null ? null : totals(consumedItems);
+  const known = summary !== null && chosen.length > summary.unknown;
+  const nutrients = [
+    { key: 'kcal', label: 'Calorias', unit: 'kcal', icon: Flame },
+    { key: 'protein', label: 'Proteina', unit: 'g', icon: Beef },
+    { key: 'fat', label: 'Gorduras', unit: 'g', icon: Droplets },
+    { key: 'carbs', label: 'Carboidratos', unit: 'g', icon: Wheat },
+  ] as const;
+  function addIngredient() {
+    const id = createId();
+    setItems((current) => [
+      ...current,
+      { id, name: 'Alimento adicional', foodId: null, amount: null },
+    ]);
+    setSelected((current) => new Set([...current, id]));
+    setCustomizing(true);
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (invalidAmounts) return;
+    if (consumedItems === null) return;
     setSaving(true);
     const ok = await run(
       async () => {
@@ -51,11 +100,11 @@ export function MealEditor({
           const existing = await db.logs.where('[day+mealId]').equals([day, meal.id]).first();
           await db.logs.put(
             mealLogSchema.parse({
-              id: existing?.id ?? crypto.randomUUID(),
+              id: log?.id ?? existing?.id ?? createId(),
               day,
               mealId: meal.id,
               name,
-              items: snapshot(chosen, data.foods),
+              items: consumedItems,
               recordedAt: new Date().toISOString(),
             }),
           );
@@ -68,25 +117,49 @@ export function MealEditor({
   }
   return (
     <Modal
-      title={plan ? 'Editar plano alimentar' : 'Registrar refeicao'}
+      title={plan ? 'Editar plano alimentar' : log ? 'Editar consumo' : 'Registrar refeicao'}
       onClose={onClose}
-      wide={plan}
+      wide
       sheet={!plan}
     >
-      <form onSubmit={submit} className="meal-editor">
+      <form
+        onSubmit={submit}
+        className={`meal-editor ${plan ? 'meal-plan-editor' : 'meal-consumption-editor'}`}
+      >
         {!plan && (
           <div className="meal-review-heading">
-            <strong>{name}</strong>
+            <label className="meal-name-field">
+              Refeicao
+              <input required value={name} onChange={(event) => setName(event.target.value)} />
+            </label>
             <span>{format(parseISO(day), 'dd/MM/yyyy')}</span>
           </div>
         )}
+        <div className="meal-editor-nutrients" aria-label="Nutrientes selecionados">
+          {nutrients.map(({ key, label, unit, icon: Icon }) => (
+            <div key={key} className={`editor-nutrient macro-${key}`}>
+              <Icon size={18} />
+              <span>{label}</span>
+              <strong>
+                {known ? number(summary[key]) : '--'}
+                <small> {unit}</small>
+              </strong>
+            </div>
+          ))}
+        </div>
+        <div className="meal-ingredients-heading">
+          <h3>Ingredientes</h3>
+          <span>{chosen.length} selecionado(s)</span>
+        </div>
         {customizing ? (
           <>
             <div className="form-grid">
-              <label>
-                Refeicao
-                <input required value={name} onChange={(event) => setName(event.target.value)} />
-              </label>
+              {plan && (
+                <label>
+                  Refeicao
+                  <input required value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+              )}
               <label>
                 Horario
                 <input
@@ -125,11 +198,20 @@ export function MealEditor({
                       <select
                         aria-label={`Alimento para ${item.name}`}
                         value={item.foodId ?? ''}
-                        onChange={(event) =>
-                          update(item.id, { foodId: event.target.value || null })
-                        }
+                        onChange={(event) => {
+                          const foodId = event.target.value || null;
+                          const food = data.foods.find((candidate) => candidate.id === foodId);
+                          update(item.id, {
+                            foodId,
+                            name: food?.name ?? originals.get(item.id)?.name ?? item.name,
+                          });
+                        }}
                       >
-                        <option value="">Nao especificado</option>
+                        <option value="">
+                          {originals.has(item.id)
+                            ? 'Manter alimento registrado'
+                            : 'Nao especificado'}
+                        </option>
                         {data.foods.map((food) => (
                           <option key={food.id} value={food.id}>
                             {food.name}
@@ -138,7 +220,7 @@ export function MealEditor({
                       </select>
                     </label>
                     <label className="portion-amount">
-                      {food?.unit ?? 'Quantidade'}
+                      {food?.unit ?? (originals.get(item.id)?.unit || 'Quantidade')}
                       <input
                         aria-label={`Quantidade de ${item.name}`}
                         type="number"
@@ -169,21 +251,6 @@ export function MealEditor({
                 );
               })}
             </div>
-            <button
-              className="button ghost"
-              type="button"
-              onClick={() => {
-                const id = crypto.randomUUID();
-                setItems([
-                  ...items,
-                  { id, name: 'Alimento adicional', foodId: null, amount: null },
-                ]);
-                setSelected(new Set([...selected, id]));
-              }}
-            >
-              <Plus size={16} />
-              Adicionar alimento
-            </button>
           </>
         ) : (
           <div className="meal-review-list">
@@ -224,13 +291,28 @@ export function MealEditor({
                         })
                       }
                     />
-                    <span>{food?.unit ?? 'A definir'}</span>
+                    <span>{food?.unit ?? (originals.get(item.id)?.unit || 'A definir')}</span>
                   </label>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="Remover alimento"
+                    aria-label={`Remover ${item.name}`}
+                    onClick={() =>
+                      setItems((current) => current.filter((candidate) => candidate.id !== item.id))
+                    }
+                  >
+                    <Trash2 size={17} />
+                  </button>
                 </div>
               );
             })}
           </div>
         )}
+        <button className="button ghost meal-add-ingredient" type="button" onClick={addIngredient}>
+          <Plus size={17} />
+          Adicionar alimento
+        </button>
         {!plan && (
           <button
             className="button ghost meal-customize"
@@ -243,7 +325,8 @@ export function MealEditor({
         )}
         {summary ? (
           <div className="notice">
-            {number(summary.kcal)} kcal conhecidas · {number(summary.protein)} g proteina
+            {known ? number(summary.kcal) : '--'} kcal conhecidas ·{' '}
+            {known ? number(summary.protein) : '--'} g proteina
             {summary.unknown > 0 && (
               <>
                 <br />
@@ -273,7 +356,7 @@ export function MealEditor({
             disabled={saving || invalidAmounts || !items.length || (!plan && !chosen.length)}
           >
             <Check size={17} />
-            {plan ? 'Salvar plano' : 'Registrar consumo'}
+            {plan ? 'Salvar plano' : log ? 'Salvar consumo' : 'Registrar consumo'}
           </button>
         </div>
       </form>
@@ -303,7 +386,7 @@ export function ActivityEditor({
     setSaving(true);
     const ok = await run(async () => {
       const value = activitySchema.parse({
-        id: activity?.id ?? crypto.randomUUID(),
+        id: activity?.id ?? createId(),
         externalId: activity?.externalId ?? null,
         source: activity?.source ?? 'manual',
         name: String(form.get('name')) || sport,
@@ -507,7 +590,7 @@ export function WeightEditor({ onClose }: { onClose: () => void }) {
     setSaving(true);
     const ok = await run(async () => {
       const value = weightSchema.parse({
-        id: existing?.id ?? crypto.randomUUID(),
+        id: existing?.id ?? createId(),
         day,
         kg: Number(form.get('kg')),
         notes: form.get('notes'),

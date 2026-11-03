@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { foodCatalog, initialMeals, initialProfile } from '../data/initialPlan';
 import { dailySummary, history } from './dashboard';
 import type { AppData } from '../hooks/useAppData';
-import { portionNutrients, snapshot, totals } from './nutrition';
+import { portionNutrients, resizeConsumedItem, snapshot, totals } from './nutrition';
 import { activeEnergy, duplicateKind, sweetsStats } from './activities';
 import { daySchema } from '../types';
 
@@ -28,6 +28,23 @@ describe('alimentacao real', () => {
   });
   it('rejeita porcoes invalidas', () =>
     expect(() => portionNutrients(foodCatalog[0], -2)).toThrow());
+  it('redimensiona consumo a partir do snapshot sem consultar catalogo nem perder unidades', () => {
+    const original = { ...snapshot(initialMeals[0].items, foodCatalog)[0], unit: 'porcao' };
+    const revised = resizeConsumedItem(original, original.amount! / 2);
+    expect(revised.unit).toBe('porcao');
+    expect(revised.nutrients!.kcal).toBe(original.nutrients!.kcal / 2);
+    expect(revised.nutrients!.protein).toBe(original.nutrients!.protein / 2);
+    expect(resizeConsumedItem(original, original.amount)).toEqual(original);
+    expect(original.amount).not.toBe(revised.amount);
+  });
+  it('nao fabrica nutrientes ao redimensionar quantidades ou nutrientes desconhecidos', () => {
+    const original = { name: 'Alimento', amount: null, unit: '', nutrients: null };
+    expect(resizeConsumedItem(original, 100).nutrients).toBeNull();
+    expect(
+      resizeConsumedItem(snapshot(initialMeals[0].items, foodCatalog)[0], null).nutrients,
+    ).toBeNull();
+    expect(() => resizeConsumedItem(original, 0)).toThrow();
+  });
 });
 
 describe('datas e registros explicitos', () => {

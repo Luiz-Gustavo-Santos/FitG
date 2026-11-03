@@ -4,6 +4,40 @@ Data: 2026-11-03. Produto anteriormente chamado Vigritmo e Shape 26/12.
 
 Atualizacao de identidade: FitG foi escolhido pelo usuario apos esta auditoria. As evidencias historicas e a triagem de nome abaixo se referem a Vigritmo; nao certificam disponibilidade de FitG. Banco e schema de backup permanecem inalterados; novas exportacoes usam o prefixo `fitg-backup-`.
 
+## Auditoria Mobile - 2026-11-03
+
+Revisao funcional com foco no celular, apos relato de erro ao incluir refeicao. Os achados historicos abaixo continuam preservados; esta secao registra as novas correcoes e evidencias.
+
+### Defeitos corrigidos
+
+| ID | Prioridade | Causa e correcao |
+| --- | --- | --- |
+| M01 | Alta | `crypto.randomUUID()` nao existe no HTTP da rede local, embora exista no localhost. Sua ausencia reproduziu `crypto.randomUUID is not a function` ao criar refeicao. Os nove pontos de criacao de IDs em refeicoes, ingredientes, consumos, treinos, peso e parsers agora usam UUID v4 com `crypto.getRandomValues`, sem depender de contexto seguro nem usar `Math.random`. |
+| M02 | Media | O Worker dependia de `crypto.subtle`, tambem ausente no HTTP da rede local. SHA-256 agora e calculado localmente com `@noble/hashes`; teste compara o resultado com SHA-256 do Node. Fingerprint, IDs externos e deduplicacao permanecem compativeis. |
+| M03 | Media | O menu de refeicoes era limitado pela largura do botao de 44 px e podia ficar sob cards vizinhos ou aviso de sucesso. Corrigidos largura de 220 px limitada pela viewport, camada do card aberto e ocultacao temporaria somente do aviso de sucesso enquanto o menu esta aberto. Avisos de erro nao sao ocultados. |
+
+### Cobertura realizada
+
+Playwright com Chromium, toque e contextos isolados. Cadastro e importacao exercitados no endereco HTTP real da rede local, `http://192.168.0.77:5174`, com `isSecureContext=false`, `crypto.randomUUID` e `crypto.subtle` ausentes. Nenhum armazenamento do usuario foi apagado ou substituido.
+
+| Area | Fluxos verificados |
+| --- | --- |
+| Alimentacao | Novo plano com dois ingredientes, consumo parcial, edicao de snapshot, registro avulso pelo botao central, persistencia apos recarregar, desfazer, editar plano, cancelar exclusao e confirmar exclusao. |
+| Datas e doces | Data nativa, troca de semana, retorno a hoje, registro sem doces, alteracao para consumo e desfazer. |
+| Treinos | Cadastro manual com exercicio/series/repeticoes/carga, edicao de duracao fracionaria, cancelamento e confirmacao de exclusao, estado vazio atualizado. |
+| Evolucao | Cadastro e atualizacao de peso na mesma data sem duplicar, exclusao, estados sem historico, abertura de graficos e calendario. |
+| Perfil e catalogo | Nome/meta salvos e preservados apos recarregar; alimento editado pela interface. |
+| Backup | Download JSON versao 1, arquivo invalido rejeitado sem substituicao, cancelamento e restauracao de arquivo valido com confirmacao. |
+| Importacao | GPX/TCX reais processados pelo Worker, revisao, gravacao, reimportacao exata bloqueada, rejeicao de XML invalido e arquivo acima de 10 MB. |
+| Layout mobile | Cinco abas, integracoes e detalhes expandidos em 320, 390 e 430 px, sem overflow horizontal da pagina. Campos dos formularios com fonte de pelo menos 16 px; rodapes de salvar alcancaveis. Faixa de indicadores da Home possui rolagem horizontal propria; indicador final foi acessado. Imagens locais carregadas. |
+| Menu por toque | Editar/excluir e cancelar/confirmar nas tres larguras. Centros dos dois itens livres de sobreposicao; toque de exclusao respondeu em 83 a 98 ms, com limite de teste de um segundo, sem aguardar o aviso expirar. |
+
+No preview de producao existente em `http://127.0.0.1:4173`, um contexto mobile isolado ativou o service worker, foi colocado offline e recarregado. Consumo anterior permaneceu acessivel, peso salvo offline persistiu apos nova recarga e GPX foi processado/importado pelo Worker sem rede. Isso valida o build no Chromium em origem local confiavel, nao a instalacao em iPhone.
+
+Verificacoes: `npm run typecheck`, `npm run test` (56 testes em seis arquivos), `npm run build` e `npm audit --omit=dev` aprovados; zero vulnerabilidades de runtime. Toda a suite da interface executa sem `randomUUID` nem `subtle`; novas regressoes cobrem plano, treino com exercicio e peso pela navegacao mobile. Build com 25 entradas de precache. Nenhum erro JavaScript nos fluxos concluidos. Permanecem avisos preexistentes de analise estatica e anotacoes do Zod/Rollup, alem dos alertas transitivos da toolchain acompanhados em A07.
+
+Limites: nao houve homologacao em Safari/WebKit, iPhone fisico, teclado virtual, leitor de tela, multiplas abas ou arquivos/historicos nos limites de desempenho. HTTP na rede local permite os registros e importacoes corrigidos, mas nao habilita service worker/instalacao offline no iPhone; isso exige contexto seguro e verificacao no aparelho. Esta revisao nao implementa recursos futuros como HealthKit, OAuth, FIT, novos alimentos ou medidas corporais. Banco `shape-26-12`, schema e backup versao 1 permanecem inalterados. Nenhuma garantia de ausencia absoluta de bugs e apresentada.
+
 ## Parecer
 
 Atualizacao da sprint 0.2.0: A01, A02, A03, A04, A05, A06 e A08 receberam correcoes e testes de regressao. Os achados abaixo preservam a evidencia original da versao 0.1.0, nao descrevem todos o estado atual. A09 teve correcao das datas e do subtitulo; revisao completa de acessibilidade continua pendente. A07 permanece sob acompanhamento. Consulte [CHANGELOG.md](CHANGELOG.md).

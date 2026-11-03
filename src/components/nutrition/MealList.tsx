@@ -1,7 +1,10 @@
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   Check,
   CheckCheck,
+  ArrowUpRight,
+  Clock3,
+  Plus,
   MoreHorizontal,
   Pencil,
   RotateCcw,
@@ -13,11 +16,12 @@ import { db } from '../../db';
 import { snapshot, totals } from '../../domain/nutrition';
 import { dailySummary } from '../../domain/dashboard';
 import { number } from '../../utils/dates';
-import { Disclosure, DisclosureGroup } from '../ui/Disclosure';
+import { Modal } from '../ui/Modal';
 import type { Meal } from '../../types';
 
 export function MealList() {
-  const { data, day, openMeal, run } = useApp();
+  const { data, day, openMeal, editConsumption, run } = useApp();
+  const [detailId, setDetailId] = useState<string | null>(null);
   const summary = dailySummary(data, day);
   const entries = [
     ...data.meals.map((meal) => ({
@@ -28,67 +32,157 @@ export function MealList() {
       .filter((log) => !data.meals.some((meal) => meal.id === log.mealId))
       .map((log) => ({ meal: null, log })),
   ];
+  const detail = entries.find(({ meal, log }) => (meal?.id ?? log!.mealId) === detailId);
+  const detailItems = detail ? (detail.log?.items ?? snapshot(detail.meal!.items, data.foods)) : [];
+  const detailNutrients = totals(detailItems);
   return (
-    <div className="meal-list" style={{ '--meal-count': entries.length } as CSSProperties}>
+    <div className="nutrition-meal-grid">
       {entries.length === 0 && <p className="empty-inline">Nenhuma refeicao planejada.</p>}
-      <DisclosureGroup>
-        {entries.map(({ meal, log }) => {
-          const items = log?.items ?? snapshot(meal!.items, data.foods);
-          const nutrients = totals(items);
-          const name = log?.name ?? meal!.name;
-          return (
-            <article key={log?.id ?? meal!.id} aria-label={`Refeicao ${name}`}>
-              <Disclosure
-                title={name}
-                summary={log ? 'Consumo registrado' : `${meal!.time} - Pendente`}
-                icon={log ? CheckCheck : Utensils}
-                className={log ? 'meal-recorded' : ''}
+      {entries.map(({ meal, log }) => {
+        const items = log?.items ?? [];
+        const nutrients = totals(items);
+        const name = log?.name ?? meal!.name;
+        return (
+          <article
+            className={`nutrition-meal-card ${log ? 'is-recorded' : ''}`}
+            key={meal?.id ?? log!.mealId}
+            aria-label={`Refeicao ${name}`}
+          >
+            <span className="nutrition-meal-art" aria-hidden="true">
+              <Utensils size={24} />
+            </span>
+            <div className="nutrition-meal-identity">
+              <button
+                type="button"
+                className="nutrition-meal-title"
+                aria-haspopup="dialog"
+                onClick={() => setDetailId(meal?.id ?? log!.mealId)}
               >
-                {!meal && <p className="small muted">Refeicao fora do plano atual</p>}
-                <ul className="food-list">
-                  {items.map((item, index) => (
-                    <li key={`${item.name}-${index}`}>
-                      <span>{item.name}</span>
-                      <span>
-                        {item.amount !== null
-                          ? `${number(item.amount, 1)} ${item.unit}`
-                          : 'A definir'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="meal-bottom">
-                  <div>
-                    <strong>
-                      {nutrients.unknown === items.length ? '--' : number(nutrients.kcal)}{' '}
-                      <small>kcal</small>
-                    </strong>
-                    <span className="small muted">
-                      {log ? 'Consumidas' : 'Planejadas'}
-                      {nutrients.unknown > 0 ? ' - parcial' : ' - aprox.'}
-                    </span>
-                  </div>
-                  {log ? (
-                    <button
-                      className="button ghost"
-                      onClick={() => run(() => db.logs.delete(log.id), 'Consumo desfeito.')}
-                    >
-                      <RotateCcw size={16} />
-                      Desfazer
-                    </button>
-                  ) : (
-                    <button className="button primary" onClick={() => openMeal(meal!)}>
-                      <Check size={17} />
-                      Registrar
-                    </button>
-                  )}
-                </div>
-                {meal && <MealOptions meal={meal} />}
-              </Disclosure>
-            </article>
-          );
-        })}
-      </DisclosureGroup>
+                {name}
+                <ArrowUpRight size={15} />
+              </button>
+              <span className="nutrition-meal-time">
+                <Clock3 size={13} />
+                {meal?.time ?? 'Registro avulso'}
+              </span>
+              {log ? (
+                <span className="nutrition-meal-status">
+                  <CheckCheck size={13} />
+                  Registrada{nutrients.unknown > 0 ? ' · parcial' : ''}
+                </span>
+              ) : (
+                <span className="nutrition-meal-empty">Sem consumo registrado</span>
+              )}
+            </div>
+            <div className="nutrition-meal-values">
+              <strong className="nutrition-meal-kcal">
+                {nutrients.unknown === items.length ? '--' : number(nutrients.kcal)}{' '}
+                <small>kcal</small>
+              </strong>
+              <span className="nutrition-meal-macros">
+                P {nutrients.unknown === items.length ? '--' : number(nutrients.protein)} · C{' '}
+                {nutrients.unknown === items.length ? '--' : number(nutrients.carbs)} · G{' '}
+                {nutrients.unknown === items.length ? '--' : number(nutrients.fat)} g
+              </span>
+            </div>
+            <div className="nutrition-meal-actions">
+              {meal && <MealOptions meal={meal} />}
+              {!log && (
+                <button
+                  className="nutrition-meal-add"
+                  type="button"
+                  title="Adicionar alimentos"
+                  onClick={() => openMeal(meal!)}
+                >
+                  <Plus size={19} />
+                  <span className="sr-only">Adicionar alimentos</span>
+                </button>
+              )}
+            </div>
+          </article>
+        );
+      })}
+      {detail && (
+        <Modal
+          title={detail.log?.name ?? detail.meal!.name}
+          onClose={() => setDetailId(null)}
+          sheet
+        >
+          <div className="nutrition-meal-details">
+            <p className="muted small">
+              {detail.log ? 'Consumo registrado' : 'Refeicao planejada · ainda nao consumida'}
+            </p>
+            {!detail.meal && <p className="small muted">Refeicao fora do plano atual</p>}
+            <strong className="nutrition-detail-kcal">
+              {detailNutrients.unknown === detailItems.length ? '--' : number(detailNutrients.kcal)}{' '}
+              <small>kcal{detailNutrients.unknown > 0 ? ' (parcial)' : ''}</small>
+            </strong>
+            <p className="nutrition-detail-macros muted small">
+              Proteina{' '}
+              {detailNutrients.unknown === detailItems.length
+                ? '--'
+                : number(detailNutrients.protein)}{' '}
+              g · Carboidratos{' '}
+              {detailNutrients.unknown === detailItems.length
+                ? '--'
+                : number(detailNutrients.carbs)}{' '}
+              g · Gorduras{' '}
+              {detailNutrients.unknown === detailItems.length ? '--' : number(detailNutrients.fat)}{' '}
+              g
+            </p>
+            <ul className="food-list">
+              {detailItems.map((item, index) => (
+                <li key={`${item.name}-${index}`}>
+                  <span>{item.name}</span>
+                  <span>
+                    {item.amount === null ? 'A definir' : `${number(item.amount, 1)} ${item.unit}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="form-actions">
+              {detail.log ? (
+                <>
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={async () => {
+                      if (await run(() => db.logs.delete(detail.log!.id), 'Consumo desfeito.'))
+                        setDetailId(null);
+                    }}
+                  >
+                    <RotateCcw size={16} />
+                    Desfazer
+                  </button>
+                  <button
+                    className="button primary"
+                    type="button"
+                    onClick={() => {
+                      setDetailId(null);
+                      editConsumption(detail.log!);
+                    }}
+                  >
+                    <Pencil size={16} />
+                    Editar consumo
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="button primary"
+                  type="button"
+                  onClick={() => {
+                    setDetailId(null);
+                    openMeal(detail.meal!);
+                  }}
+                >
+                  <Check size={17} />
+                  Registrar
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

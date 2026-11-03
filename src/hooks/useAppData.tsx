@@ -21,6 +21,8 @@ export interface AppContextValue {
   setPage: (page: Page) => void;
   openMeal: (meal: Meal, plan?: boolean) => void;
   newMeal: () => void;
+  newConsumption: () => void;
+  editConsumption: (log: MealLog) => void;
   openActivity: (activity?: Activity) => void;
   openWeight: () => void;
   run: (action: () => Promise<unknown>, message: string) => Promise<boolean>;

@@ -1,15 +1,12 @@
-import { parseActivities } from './activityParser';
+import { activityFingerprint, parseActivities } from './activityParser';
 
 self.onmessage = async (event: MessageEvent<File>) => {
   try {
     const file = event.data;
     if (file.size > 10 * 1024 * 1024) throw new Error('O limite e 10 MB por arquivo.');
     self.postMessage({ progress: 10 });
-    const bytes = await file.arrayBuffer();
-    const hash = await crypto.subtle.digest('SHA-256', bytes);
-    const fingerprint = Array.from(new Uint8Array(hash), (value) =>
-      value.toString(16).padStart(2, '0'),
-    ).join('');
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const fingerprint = activityFingerprint(bytes);
     self.postMessage({ progress: 40 });
     const activities = parseActivities(new TextDecoder().decode(bytes), fingerprint);
     self.postMessage({ progress: 100, activities });

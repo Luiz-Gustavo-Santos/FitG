@@ -1,5 +1,12 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { activitySchema, type Activity } from '../../types';
+import { createId } from '../../utils/ids';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
+
+export function activityFingerprint(bytes: Uint8Array): string {
+  return bytesToHex(sha256(bytes));
+}
 
 type Node = Record<string, unknown>;
 const object = (value: unknown): Node =>
@@ -66,7 +73,7 @@ export function parseActivities(xml: string, fingerprint: string): Activity[] {
       const start = times[0];
       return {
         ...defaults,
-        id: crypto.randomUUID(),
+        id: createId(),
         externalId: `${fingerprint}:${index}`,
         source: 'gpx',
         name: String(track.name ?? 'Atividade GPX'),
@@ -91,7 +98,7 @@ export function parseActivities(xml: string, fingerprint: string): Activity[] {
         const start = timestamp(laps[0]['@_StartTime'] ?? activity.Id);
         return {
           ...defaults,
-          id: crypto.randomUUID(),
+          id: createId(),
           externalId: `${fingerprint}:${index}`,
           source: 'tcx',
           name: `Atividade ${sportName(activity['@_Sport'])}`,

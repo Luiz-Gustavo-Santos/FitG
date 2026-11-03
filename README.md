@@ -34,15 +34,26 @@ npm run preview
 
 `test` executa uma vez, sem watch. `preview` serve o build local, normalmente na porta 4173; e nele que o service worker/offline deve ser testado. Nao e um servidor de producao. Nao ha escolha de hospedagem, dominio ou caminho-base de publicacao.
 
+### Celular na rede local
+
+Se o servidor ja estiver ativo, reutilize o endereco e a porta atuais. Para iniciar um servidor acessivel pelo celular na mesma rede confiavel, quando nao houver um em uso:
+
+```sh
+npm run dev -- --host 0.0.0.0 --port 5174 --strictPort
+```
+
+Abra no celular o endereco `Network` mostrado pelo Vite. `--strictPort` impede a troca silenciosa de porta. Preserve a mesma origem/porta para continuar acessando os registros; nao limpe os dados do navegador. O acesso HTTP permite registros locais e importacao GPX/TCX, mas nao habilita instalacao/offline da PWA no iPhone. IDs e SHA-256 nao dependem de APIs exclusivas de contexto seguro.
+
 ## Implementado nesta primeira versao
 
-- Interface fitness verde-neon com listas recolhiveis, sidebar desktop, navegacao inferior mobile, safe areas e data compacta com retorno a hoje. Todas as secoes iniciam fechadas; apenas uma refeicao fica aberta por vez. No desktop amplo, os detalhes da refeicao aparecem ao lado da lista.
+- Home com tema Laranja Energia, indicadores circulares e destaques fotograficos locais de Nutricao, Performance e Evolucao. Sidebar desktop, navegacao inferior mobile, safe areas e data compacta com retorno a hoje. Treinos, Evolucao e Perfil preservam suas composicoes existentes.
+- Alimentacao com faixa semanal, resumo compacto, anel de 144 px no desktop ao lado das calorias restantes/consumidas e tres progressos de macros. Refeicoes em linhas horizontais de aproximadamente 100 px no desktop, com duas colunas apenas em telas amplas; area do card abre detalhes, mantendo acoes separadas de registro e opcoes. Detalhes usam o mesmo modal, como painel lateral no desktop e folha inferior no mobile. Sem painel lateral redundante; criacao de refeicoes junto ao titulo e doces em secao secundaria compacta. Mobile preserva a acao central de novo registro. Sem consumo conhecido, indicadores permanecem desconhecidos. Como nao ha fotos de refeicoes cadastradas, os cards usam icone neutro em vez de imagens ficticias.
 - Perfil e metas editaveis, seis refeicoes planejadas e semana de treinos de referencia, sem registros historicos pre-fabricados.
 - Catalogo nutricional aproximado e editavel, com fonte/base/unidade. Porcoes sem escolha ou quantidade permanecem desconhecidas.
-- Registro de consumo abre primeiro selecao e quantidades; personalizacao de alimentos fica sob demanda e preserva os ajustes. No mobile, usa folha inferior com foco contido e controles de toque ampliados. Consumo parcial, substituicoes, inclusao de alimentos, refeicoes planejadas e desfazer continuam disponiveis; edicao/exclusao do plano ficam no menu de opcoes, com confirmacao para excluir.
-- Consumos preservam snapshots; editar o plano ou catalogo nao reescreve historico. Novo registro da mesma refeicao/data substitui o anterior.
+- Editor de consumo com nome editavel, quatro indicadores nutricionais, selecao, quantidades/unidades e inclusao/remocao de ingredientes. Personalizacao preserva o rascunho. Folha inferior no mobile, modal amplo no desktop e rodape de salvar visivel durante a rolagem. Edicao/exclusao do plano ficam no menu de opcoes, com confirmacao para excluir.
+- Consumos preservam snapshots; editar o plano ou catalogo nao reescreve historico. Consumos salvos, inclusive avulsos e de planos excluidos, podem ser editados ou desfeitos no painel de detalhes. Ajustar uma porcao usa os nutrientes registrados; substituir explicitamente um alimento usa o catalogo atual. Novo registro da mesma refeicao/data substitui o anterior. Registro avulso nao cria refeicao no plano.
 - Treinos manuais com inicio, modalidade, duracao, distancia, frequencia cardiaca, energia informada/tipo, notas e exercicios com series/repeticoes/carga; edicao/exclusao.
-- Home de uso diario com registro rapido e refeicoes recolhidas. Resumo diferencia ausencia de registros de nutrientes desconhecidos; progresso calorico aparece somente com consumo conhecido e meta valida. Macros, saldo, treino, peso e historico ficam agrupados em Resumo e historico. Meta fixa nao repoe automaticamente o treino; saldo exige consumo conhecido e TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
+- Home de consulta diaria: os cards e indicadores abrem Alimentacao, Treinos e Evolucao; o preenchimento permanece nesses menus. Aneis de calorias e proteina usam consumo conhecido e metas validas, sem transformar ausencia de dados em zero. Consistencia conta dias com alimentacao ou treino registrados nos ultimos sete dias, nao adesao ao plano nem pontuacao de saude. Peso e minigrafico usam somente pesagens reais ate a data selecionada; sem historico suficiente, nao ha tendencia inventada. Macros, saldo, treino, peso e historico detalhados continuam em Resumo e historico. Meta fixa nao repoe automaticamente o treino; saldo exige consumo conhecido e TDEE informado com origem. Energia desconhecida/total nao entra na soma de energia ativa.
 - Peso com data/notas, media dos registros de sete dias, variacao, exclusao e graficos de peso, consumo, proteina e frequencia de treino em 7/30 dias.
 - Dias de doces explicitamente registrados, desfazer, calendario, sequencia, recorde e percentual sobre dias registrados. Dias ausentes nao viram dias sem doces.
 - IndexedDB versionado, inicializacao idempotente, validacao com Zod e backup JSON validado/restaurado em transacao atomica apos confirmacao.
@@ -61,10 +72,10 @@ Metas nao sao prescricao medica. Variacao de peso nao significa necessariamente 
 
 Arquivos GPX ou TCX XML, ate 10 MB e 500 atividades por arquivo. Processamento no dispositivo, sem upload. XML malformado e DTD/entidades sao rejeitados; arquivos sem campos obrigatorios nao sao importados parcialmente.
 
-| Formato | Campos importados | Ausencias/limites |
-| --- | --- | --- |
-| GPX | Nome, modalidade reconhecida, inicio com fuso, duracao decorrida dos horarios dos pontos | Requer track e pelo menos dois horarios ordenados; nao importa rotas sem horario, distancia, FC, energia ou extensoes |
-| TCX | Modalidade, inicio com fuso, soma da duracao de voltas, distancia em km, calorias e FC media ponderada quando todas as voltas informam os campos | Calorias entram com tipo desconhecido; nao sao automaticamente energia ativa. Sem FIT, extensoes ou arquivos de cursos |
+| Formato | Campos importados                                                                                                                                | Ausencias/limites                                                                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GPX     | Nome, modalidade reconhecida, inicio com fuso, duracao decorrida dos horarios dos pontos                                                         | Requer track e pelo menos dois horarios ordenados; nao importa rotas sem horario, distancia, FC, energia ou extensoes  |
+| TCX     | Modalidade, inicio com fuso, soma da duracao de voltas, distancia em km, calorias e FC media ponderada quando todas as voltas informam os campos | Calorias entram com tipo desconhecido; nao sao automaticamente energia ativa. Sem FIT, extensoes ou arquivos de cursos |
 
 O ID de importacao e o SHA-256 do arquivo mais indice da atividade. Um arquivo diferente e analisado por proximidade de inicio (10 minutos), duracao (5 minutos ou 15%) e modalidade. Possiveis duplicatas ficam desmarcadas; marcar significa confirmar um treino distinto. Verifique a modalidade `Outro` apos importar.
 
@@ -72,7 +83,7 @@ O ID de importacao e o SHA-256 do arquivo mais indice da atividade. Um arquivo d
 
 O service worker fica desativado no `dev` para nao interferir em edicoes. Para verificar offline: gerar build, executar preview, abrir conectado, aguardar instalacao do service worker, recarregar e depois desligar a rede. Cache e IndexedDB sao independentes. Atualizacoes nao recarregam um formulario automaticamente; feche todas as abas e reabra para ativar uma versao nova.
 
-A instalacao no iPhone requer Safari e contexto seguro compativel. `127.0.0.1` no computador nao e acessivel pelo iPhone; teste no aparelho exige acesso local seguro configurado separadamente. Esta entrega nao configura HTTPS, hospedagem ou publicacao. Layout mobile foi validado por viewport; HealthKit/instalacao em iPhone fisico ainda nao foram certificados.
+A instalacao e o service worker no iPhone requerem Safari e contexto seguro compativel. `127.0.0.1` no computador nao e acessivel pelo iPhone. Os registros e importacoes locais podem ser usados pelo endereco HTTP da rede, mas instalacao/offline no aparelho exige acesso seguro configurado separadamente. Esta entrega nao configura HTTPS, hospedagem ou publicacao. Layout e fluxos mobile foram verificados por viewport e toque em Chromium; Safari, teclado virtual, HealthKit e instalacao em iPhone fisico ainda nao foram homologados.
 
 Para regenerar os icones locais: `node scripts/generate-icons.mjs`.
 
@@ -80,7 +91,7 @@ Para regenerar os icones locais: `node scripts/generate-icons.mjs`.
 
 Dados ficam neste dispositivo e nesta origem do navegador. Trocar porta/origem, usar outro navegador, limpar armazenamento ou desinstalar pode tornar os dados indisponiveis. Exporte backups regularmente. O JSON inclui dados de saude em texto legivel; guarde-o com cuidado. Restauracao substitui todos os dados e exige confirmacao. Limite de backup: 20 MB.
 
-Nao ha fotos nesta versao; portanto o backup inclui todos os registros implementados. Nao armazenamos imagens no localStorage. Fontes e icones sao locais; nao ha CDN, analytics ou chamadas de API de saude.
+Nao ha fotos pessoais nesta versao; o backup inclui todos os registros implementados. As fotografias ilustrativas da Home, fontes e icones sao assets locais, com as imagens incluidas no precache da PWA. Origens e licenca em [public/images/README.md](public/images/README.md). Nao armazenamos imagens no localStorage; nao ha CDN durante o uso, analytics ou chamadas de API de saude.
 
 ## Proximas etapas e integracoes nao implementadas
 
@@ -92,6 +103,14 @@ Nao ha fotos nesta versao; portanto o backup inclui todos os registros implement
 - Associacoes de duplicatas ainda nao sao mescladas entre fontes; nesta versao a revisao permite ignorar a entrada ou confirmar que e outra atividade.
 
 ## Verificacao e dependencias
+
+Auditoria mobile: 56 testes em seis arquivos, typecheck, build e auditoria de runtime aprovados. Toda a suite da interface roda sem `crypto.randomUUID` nem `crypto.subtle`. Playwright conferiu o HTTP real da rede local: plano/consumo parcial/avulso/edicao/desfazer, treino com exercicio, peso, doces, perfil/catalogo, backup valido/invalido e GPX/TCX com deduplicacao e erros. Cinco abas e integracoes em 320/390/430 px, sem overflow da pagina; menu com itens livres para toque imediatamente apos salvar. No preview do build em loopback, recarga offline preservou consumo, peso gravado offline persistiu e GPX foi importado pelo Worker sem rede. Contextos isolados, sem alterar dados do usuario. Evidencias e limites em [AUDITORIA.md](AUDITORIA.md); nao certifica Safari/iPhone fisico ou PWA no HTTP da rede local.
+
+Sprint 10.1: layout medido no Playwright MCP em 1366x768 e 390x844. Resumo desktop de 282 px, anel de 144 px, cards de 100 px e duas refeicoes inteiras na primeira dobra. Mobile com resumo de 298 px e primeira refeicao inteira acima da acao flutuante, sem transbordamento horizontal. Clique na area do card, opcoes de editar/excluir, detalhes laterais de 420 px, modal mobile, criacao de plano, consumo parcial de 415,3 kcal, persistencia apos recarregar e desfazer conferidos em contexto isolado; nenhum erro JavaScript. Sem alteracao no banco, dominio nutricional ou dependencias. Nao certifica Safari/iPhone fisico ou teclado virtual.
+
+Sprint 10: 51 testes, typecheck e build aprovados. Alimentacao conferida no Playwright MCP em 320, 430 e 1440 px, sem accordions de refeicoes, transbordamento ou erros JavaScript. Validacao em contexto isolado: navegacao por dia, consumo parcial de 400,5 kcal, ingredientes adicionados/removidos, persistencia apos recarregar, edicao para 440,5 kcal, registro avulso, desfazer e retorno de foco por Escape. Rodape de salvar, ultima porcao e quantidades legiveis verificados nos tres tamanhos; modal desktop com 760 px. Aviso de sucesso nao cobre a acao central. Banco/schema/backup permanecem inalterados. Nao certifica teclado virtual, Safari/iPhone fisico, instalacao ou offline em dispositivo.
+
+Sprint 09: 47 testes, typecheck e build aprovados. Home conferida no Playwright MCP em 320, 430 e 1440 px, com imagens locais carregadas, sem rolagem horizontal da pagina ou erros JavaScript. Alimentacao parcial, treino, duas pesagens, persistencia apos recarregar e acesso ao Perfil por teclado foram verificados em contexto isolado, sem alterar a base do usuario. Fotografias presentes no precache gerado. Nao certifica Safari/iPhone fisico, teclado virtual, instalacao ou operacao offline em dispositivo.
 
 Testes cobrem dominio energetico, porcoes/snapshots, datas invalidas, doces, IndexedDB/backup, GPX/TCX e fluxo da interface. Revisar tambem formulacao de dados desconhecidos e os controles no navegador ao mudar regras.
 

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { parseActivities } from './activityParser';
+import { describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
+import { activityFingerprint, parseActivities } from './activityParser';
 import { duplicateKind, activeEnergy, reviewImport, prepareImport } from '../../domain/activities';
 
 const gpx =
@@ -8,6 +9,19 @@ const tcx =
   '<TrainingCenterDatabase><Activities><Activity Sport="Biking"><Id>2026-11-03T10:00:00Z</Id><Lap StartTime="2026-11-03T10:00:00Z"><TotalTimeSeconds>1800</TotalTimeSeconds><DistanceMeters>10000</DistanceMeters><Calories>200</Calories><AverageHeartRateBpm><Value>140</Value></AverageHeartRateBpm></Lap></Activity></Activities></TrainingCenterDatabase>';
 
 describe('importacao local delimitada', () => {
+  it('preserva SHA-256 e IDs externos sem subtle nem randomUUID no HTTP mobile', () => {
+    const getRandomValues = crypto.getRandomValues.bind(crypto);
+    vi.stubGlobal('crypto', { getRandomValues });
+    try {
+      expect(crypto.subtle).toBeUndefined();
+      const fingerprint = activityFingerprint(new TextEncoder().encode(gpx));
+      expect(fingerprint).toBe(createHash('sha256').update(gpx).digest('hex'));
+      expect(activityFingerprint(new Uint8Array())).toBe(createHash('sha256').digest('hex'));
+      expect(parseActivities(gpx, fingerprint)[0].externalId).toBe(`${fingerprint}:0`);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('importa horarios GPX sem inventar distancia ou energia', () => {
     const [activity] = parseActivities(gpx, 'hash');
     expect(activity).toMatchObject({

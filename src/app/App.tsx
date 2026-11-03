@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createId } from '../utils/ids';
 import {
   Activity,
   ArrowUpRight,
@@ -10,6 +11,7 @@ import {
   Dumbbell,
   Home as HomeIcon,
   LoaderCircle,
+  Plus,
   Settings as SettingsIcon,
   ShieldCheck,
   Utensils,
@@ -20,7 +22,7 @@ import { addDays, parseISO } from 'date-fns';
 import { initialize } from '../db';
 import { AppProvider, useAppData, type Page } from '../hooks/useAppData';
 import { dayLabel, localDay } from '../utils/dates';
-import type { Activity as ActivityType, Meal } from '../types';
+import type { Activity as ActivityType, Meal, MealLog } from '../types';
 import { Home } from '../pages/Home';
 import { Nutrition } from '../pages/Nutrition';
 import { Training } from '../pages/Training';
@@ -38,7 +40,7 @@ const navigation = [
   { id: 'settings', label: 'Perfil', title: 'Perfil e metas', icon: SettingsIcon },
 ] as const;
 type Editor =
-  | { kind: 'meal'; meal: Meal; plan: boolean }
+  | { kind: 'meal'; meal: Meal; plan: boolean; log?: MealLog }
   | { kind: 'activity'; activity?: ActivityType }
   | { kind: 'weight' }
   | null;
@@ -78,6 +80,19 @@ export function App() {
   function setPage(next: Page) {
     updatePage(next);
     window.scrollTo({ top: 0 });
+  }
+  function startConsumption(log?: MealLog) {
+    setEditor({
+      kind: 'meal',
+      plan: false,
+      log,
+      meal: {
+        id: log?.mealId ?? createId(),
+        name: log?.name ?? 'Nova refeicao',
+        time: '12:00',
+        items: [],
+      },
+    });
   }
   async function run(action: () => Promise<unknown>, message: string) {
     try {
@@ -129,12 +144,14 @@ export function App() {
             kind: 'meal',
             plan: true,
             meal: {
-              id: crypto.randomUUID(),
+              id: createId(),
               name: 'Nova refeicao',
               time: '12:00',
-              items: [{ id: crypto.randomUUID(), name: 'Alimento', foodId: null, amount: null }],
+              items: [{ id: createId(), name: 'Alimento', foodId: null, amount: null }],
             },
           }),
+        newConsumption: () => startConsumption(),
+        editConsumption: startConsumption,
         openActivity: (activity) => setEditor({ kind: 'activity', activity }),
         openWeight: () => setEditor({ kind: 'weight' }),
         confirm: (message, action) => setConfirmation({ message, action }),
@@ -196,7 +213,9 @@ export function App() {
           </button>
         </div>
       </aside>
-      <div className="workspace">
+      <div
+        className={`workspace${page === 'home' ? ' home-workspace' : ''}${page === 'nutrition' ? ' nutrition-workspace' : ''}`}
+      >
         <header className="topbar">
           <div className="header-location">
             <span className="header-brand">
@@ -217,13 +236,24 @@ export function App() {
               </>
             )}
             <span className="header-divider" />
-            <span className="avatar small-avatar">
-              {data.profile.name.slice(0, 1).toUpperCase()}
-            </span>
+            {page === 'home' ? (
+              <button
+                type="button"
+                className="avatar small-avatar home-profile"
+                aria-label="Abrir perfil"
+                onClick={() => setPage('settings')}
+              >
+                {data.profile.name.slice(0, 1).toUpperCase()}
+              </button>
+            ) : (
+              <span className="avatar small-avatar">
+                {data.profile.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
           </div>
         </header>
         <main id="main">
-          {page !== 'settings' && page !== 'integrations' && (
+          {page !== 'settings' && page !== 'integrations' && page !== 'nutrition' && (
             <div className="date-toolbar">
               <span className="date-label">{dayLabel(day)}</span>
               <div className="date-controls">
@@ -280,7 +310,21 @@ export function App() {
           </footer>
         </main>
       </div>
-      <nav className="bottom-nav" aria-label="Navegacao mobile">
+      <nav
+        className={`bottom-nav${page === 'nutrition' ? ' nutrition-bottom-nav' : ''}`}
+        aria-label="Navegacao mobile"
+      >
+        {page === 'nutrition' && (
+          <button
+            className="nutrition-fab"
+            type="button"
+            aria-label="Novo registro alimentar"
+            title="Novo registro alimentar"
+            onClick={() => startConsumption()}
+          >
+            <Plus size={27} />
+          </button>
+        )}
         {navigation.map((item) => (
           <button
             key={item.id}
@@ -298,6 +342,7 @@ export function App() {
           key={editor.meal.id}
           meal={editor.meal}
           plan={editor.plan}
+          log={editor.log}
           onClose={() => setEditor(null)}
         />
       )}
