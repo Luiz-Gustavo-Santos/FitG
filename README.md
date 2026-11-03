@@ -6,6 +6,14 @@ O banco IndexedDB permanece com a chave legada `shape-26-12` para preservar os r
 
 Aplicativo pessoal local-first para alimentacao, treinos e evolucao corporal. React + TypeScript + Vite, Tailwind, Dexie/IndexedDB, Recharts e PWA. Sem backend, telemetria ou deploy.
 
+## Versoes e atualizacao
+
+Consulte [CHANGELOG.md](CHANGELOG.md) para correcoes e compatibilidade. A versao do app aparece no rodape; banco e backup continuam no schema 1, independentemente da versao do aplicativo.
+
+A PWA avisa quando ha nova versao. Feche ou conclua formularios e confirme a recarga; registros salvos permanecem locais. A versao 0.1.0 ainda nao tinha esse aviso: para receber a primeira atualizacao, pode ser necessario fechar todas as abas e reabrir, sem limpar dados do navegador.
+
+Backups com modo dinamico sao aceitos somente apos confirmacao explicita para usar a meta fixa do proprio arquivo. A interface ainda nao configura atividade incremental para meta dinamica.
+
 ## Executar localmente
 
 Node.js 24 LTS e npm. Na raiz:

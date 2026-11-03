@@ -6,6 +6,12 @@ Atualizacao de identidade: FitG foi escolhido pelo usuario apos esta auditoria. 
 
 ## Parecer
 
+Atualizacao da sprint 0.2.0: A01, A02, A03, A04, A05, A06 e A08 receberam correcoes e testes de regressao. Os achados abaixo preservam a evidencia original da versao 0.1.0, nao descrevem todos o estado atual. A09 teve correcao das datas e do subtitulo; revisao completa de acessibilidade continua pendente. A07 permanece sob acompanhamento. Consulte [CHANGELOG.md](CHANGELOG.md).
+
+Verificacao da sprint: 33 testes em 5 arquivos aprovados; typecheck e build aprovados; auditoria de dependencias de runtime com zero vulnerabilidades. No navegador, foram verificados consumo sem plano, desfazer, GPX com duplicatas internas, edicao de duracao fracionaria e atualizacao real de 0.2.0-rc.1 para 0.2.0. O aviso bloqueou o rascunho aberto e, apos confirmacao, a nova versao manteve o consumo salvo. Os registros temporarios foram removidos pela interface. Capturas desktop/mobile e cinco telas em 320/390 px sem overflow.
+
+Limite desta verificacao: o contexto integrado alternou a conexao para online durante os reloads e nao concluiu de forma consistente a chamada de simulacao de rede. Assim, o teste offline automatizado da 0.2.0 ficou inconclusivo; os testes offline anteriores da 0.1.0 nao substituem uma nova verificacao em navegador/dispositivo independente. Multiplas abas, iPhone fisico, acessibilidade completa, licencas comerciais e disponibilidade juridica de FitG continuam pendentes. Esta release e uma base de desenvolvimento, nao uma certificacao comercial.
+
 A entrega e uma primeira versao local funcional, nao a implementacao integral da especificacao. Alimentacao, treinos manuais, peso, doces, backup, graficos, importacao GPX/TCX e PWA possuem caminhos reais de uso. Existem defeitos de integridade da apresentacao e da importacao que devem ser corrigidos antes de considerar o fluxo plenamente aceito.
 
 Esta etapa alterou a marca e adicionou protecao de regressao para o nome publico e o banco legado. Os problemas abaixo permanecem abertos, salvo indicacao explicita. Auditoria nao equivale a correcao de todos os achados.
