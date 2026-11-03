@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, FileUp, Link2, ShieldCheck, Watch } from 'lucide-react';
 import { useApp } from '../hooks/useAppData';
 import { db } from '../db';
-import { duplicateKind } from '../domain/activities';
+import { prepareImport, reviewImport } from '../domain/activities';
 import { number } from '../utils/dates';
 import type { Activity } from '../types';
 
@@ -15,6 +15,7 @@ export function Integrations() {
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const workerRef = useRef<Worker | null>(null);
+  const reviewedRef = useRef<Activity[]>([]);
   useEffect(() => () => workerRef.current?.terminate(), []);
   function importFile(file: File) {
     setError('');
@@ -33,15 +34,13 @@ export function Integrations() {
         worker.terminate();
       } else if (event.data.activities) {
         const parsed = event.data.activities as Activity[];
+        reviewedRef.current = data.activities;
         setActivities(parsed);
         setSelected(
           new Set(
-            parsed
-              .filter(
-                (candidate) =>
-                  !data.activities.some((existing) => duplicateKind(candidate, existing)),
-              )
-              .map((activity) => activity.id),
+            reviewImport(parsed, data.activities)
+              .filter((entry) => !entry.exact && !entry.conflicts.length)
+              .map((entry) => entry.activity.id),
           ),
         );
         setProgress(null);
@@ -146,10 +145,8 @@ export function Integrations() {
             <span className="muted small">{selected.size} selecionada(s)</span>
           </div>
           <div className="import-list">
-            {activities.map((activity) => {
-              const matches = data.activities.map((existing) => duplicateKind(activity, existing));
-              const exact = matches.includes('exact');
-              const possible = matches.includes('possible');
+            {reviewImport(activities, data.activities).map(({ activity, exact, conflicts }) => {
+              const possible = conflicts.length > 0;
               return (
                 <label className="import-row" key={activity.id}>
                   <input
@@ -205,16 +202,28 @@ export function Integrations() {
                 const ok = await run(async () => {
                   await db.transaction('rw', db.activities, async () => {
                     const existing = await db.activities.toArray();
-                    const chosen = activities.filter(
-                      (activity) =>
-                        selected.has(activity.id) &&
-                        !existing.some((record) => duplicateKind(activity, record) === 'exact'),
+                    const chosen = prepareImport(
+                      activities,
+                      existing,
+                      selected,
+                      reviewedRef.current,
                     );
                     await db.activities.bulkPut(chosen);
                   });
                 }, 'Atividades importadas. Revise modalidade e campos em Treinos.');
                 setSaving(false);
                 if (ok) setActivities([]);
+                else {
+                  const latest = await db.activities.toArray();
+                  reviewedRef.current = latest;
+                  setSelected(
+                    new Set(
+                      reviewImport(activities, latest)
+                        .filter((entry) => !entry.exact && !entry.conflicts.length)
+                        .map((entry) => entry.activity.id),
+                    ),
+                  );
+                }
               }}
             >
               <Check size={17} />

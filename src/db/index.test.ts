@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, ShapeDatabase, initialize, exportBackup, restoreBackup } from './index';
 
 let database: ShapeDatabase;
@@ -38,5 +38,27 @@ describe('persistencia e backup', () => {
       restoreBackup({ ...backup, profile: { ...backup.profile, kcal: -1 } }, database),
     ).rejects.toThrow();
     expect(await database.meals.count()).toBe(6);
+  });
+  it('exige confirmacao para restaurar modo dinamico como meta fixa', async () => {
+    await initialize(database);
+    const backup = await exportBackup(database);
+    backup.profile.mode = 'dynamic';
+    await expect(restoreBackup(backup, database)).rejects.toThrow('confirme');
+    expect((await database.profile.get('profile'))?.mode).toBe('fixed');
+    await restoreBackup(backup, database, { useFixedTarget: true });
+    expect((await database.profile.get('profile'))?.kcal).toBe(backup.profile.kcal);
+    expect((await database.profile.get('profile'))?.mode).toBe('fixed');
+  });
+  it('reverte toda a restauracao se uma escrita falhar apos limpar tabelas', async () => {
+    await initialize(database);
+    await database.weights.put({ id: 'existing', day: '2026-11-03', kg: 67.2, notes: 'Preservar' });
+    const backup = await exportBackup(database);
+    backup.profile.kcal = 3300;
+    backup.weights = [];
+    vi.spyOn(database.activities, 'bulkPut').mockRejectedValueOnce(new Error('Falha simulada'));
+    await expect(restoreBackup(backup, database)).rejects.toThrow('Falha simulada');
+    expect((await database.profile.get('profile'))?.kcal).toBe(2800);
+    expect(await database.meals.count()).toBe(6);
+    expect((await database.weights.get('existing'))?.notes).toBe('Preservar');
   });
 });

@@ -100,11 +100,19 @@ export async function exportBackup(database = db) {
   );
 }
 
-export async function restoreBackup(input: unknown, database = db) {
+export async function restoreBackup(
+  input: unknown,
+  database = db,
+  options?: { useFixedTarget?: boolean },
+) {
   const backup = backupSchema.parse(input);
+  if (backup.profile.mode === 'dynamic' && !options?.useFixedTarget)
+    throw new Error('Backup com meta dinamica: confirme o uso da meta fixa antes de restaurar.');
   await database.transaction('rw', database.tables, async () => {
     await Promise.all(database.tables.map((table) => table.clear()));
-    await database.profile.put(backup.profile);
+    await database.profile.put(
+      options?.useFixedTarget ? { ...backup.profile, mode: 'fixed' } : backup.profile,
+    );
     await database.meals.bulkPut(backup.meals);
     await database.foods.bulkPut(backup.foods);
     await database.logs.bulkPut(backup.logs);

@@ -13,10 +13,7 @@ const numeric = (value: unknown): number | null => {
 };
 function timestamp(value: unknown): string {
   const text = String(value ?? '');
-  if (
-    !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ||
-    !Number.isFinite(Date.parse(text))
-  )
+  if (!activitySchema.shape.start.safeParse(text).success || !Number.isFinite(Date.parse(text)))
     throw new Error('A atividade precisa de horarios validos com fuso horario.');
   return new Date(text).toISOString();
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseActivities } from './activityParser';
-import { duplicateKind, activeEnergy } from '../../domain/activities';
+import { duplicateKind, activeEnergy, reviewImport, prepareImport } from '../../domain/activities';
 
 const gpx =
   '<gpx><trk><name>Corrida</name><type>running</type><trkseg><trkpt><time>2026-11-03T10:00:00Z</time></trkpt><trkpt><time>2026-11-03T10:30:00Z</time></trkpt></trkseg></trk></gpx>';
@@ -44,5 +44,32 @@ describe('importacao local delimitada', () => {
     expect(() =>
       parseActivities('<gpx><trk><trkseg><trkpt/></trkseg></trk></gpx>', 'hash'),
     ).toThrow();
+  });
+  it('rejeita datas impossiveis, horarios invalidos e ausencia de fuso antes de normalizar', () => {
+    for (const invalid of ['2026-02-30T10:00:00Z', '2026-11-03T24:00:00Z', '2026-11-03T10:00:00']) {
+      expect(() => parseActivities(gpx.replace('2026-11-03T10:00:00Z', invalid), 'hash')).toThrow();
+    }
+    expect(parseActivities(gpx.replaceAll('Z', '-03:00'), 'offset')[0].start).toBe(
+      '2026-11-03T13:00:00.000Z',
+    );
+  });
+  it('exige selecao explicita de possiveis duplicatas internas do lote', () => {
+    const candidates = parseActivities(gpx.replace('</gpx>', gpx.slice(5)), 'batch');
+    const review = reviewImport(candidates, []);
+    expect(review.filter((entry) => !entry.exact && !entry.conflicts.length)).toHaveLength(0);
+    expect(prepareImport(candidates, [], new Set([candidates[0].id]), [])).toHaveLength(1);
+    expect(
+      prepareImport(candidates, [], new Set(candidates.map((activity) => activity.id)), []),
+    ).toHaveLength(2);
+  });
+  it('bloqueia novo conflito durante a gravacao e ignora reimportacao exata', () => {
+    const [candidate] = parseActivities(gpx, 'new');
+    const [existing] = parseActivities(gpx, 'existing');
+    const selected = new Set([candidate.id]);
+    expect(() => prepareImport([candidate], [existing], selected, [])).toThrow('mudaram');
+    expect(prepareImport([candidate], [existing], selected, [existing])).toHaveLength(1);
+    expect(
+      prepareImport([candidate], [{ ...candidate, id: 'persisted' }], selected, []),
+    ).toHaveLength(0);
   });
 });

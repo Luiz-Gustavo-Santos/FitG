@@ -29,6 +29,45 @@ export function activeEnergy(activities: Activity[]) {
   };
 }
 
+export function reviewImport(candidates: Activity[], existing: Activity[]) {
+  return candidates.map((activity, index) => {
+    const peers = candidates.filter((_, position) => position !== index);
+    const conflicts = [...existing, ...peers]
+      .filter((record) => duplicateKind(activity, record) === 'possible')
+      .map((record) =>
+        JSON.stringify([
+          record.id,
+          record.source,
+          record.externalId,
+          record.start,
+          record.duration,
+          record.sport,
+        ]),
+      );
+    const exact = [...existing, ...candidates.slice(0, index)].some(
+      (record) => duplicateKind(activity, record) === 'exact',
+    );
+    return { activity, exact, conflicts };
+  });
+}
+
+export function prepareImport(
+  candidates: Activity[],
+  existing: Activity[],
+  selected: Set<string>,
+  reviewed: Activity[],
+) {
+  const previous = reviewImport(candidates, reviewed);
+  return reviewImport(candidates, existing)
+    .filter((entry, index) => {
+      if (!selected.has(entry.activity.id) || entry.exact) return false;
+      if (entry.conflicts.some((conflict) => !previous[index].conflicts.includes(conflict)))
+        throw new Error('As atividades mudaram durante a revisao. Revise as selecoes novamente.');
+      return true;
+    })
+    .map((entry) => entry.activity);
+}
+
 export function sweetsStats(records: Sweets[], day: string) {
   const map = new Map(
     records.filter((record) => record.day <= day).map((record) => [record.day, record.status]),

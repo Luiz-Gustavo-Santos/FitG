@@ -123,10 +123,26 @@ export function Settings() {
           </label>
         </div>
         <p className="muted small">
-          Metas sao referencias editaveis, nao prescricao medica. Modo atual: meta fixa; atividade
-          fisica nao altera automaticamente a meta alimentar.
+          Metas sao referencias editaveis, nao prescricao medica.{' '}
+          {data.profile.mode === 'fixed'
+            ? 'Modo atual: meta fixa; atividade fisica nao altera automaticamente a meta alimentar.'
+            : 'Modo atual: dinamico, sem configuracao completa nesta versao. Ative a meta fixa para recuperar o calculo da meta.'}
         </p>
         <div className="form-actions">
+          {data.profile.mode === 'dynamic' && (
+            <button
+              type="button"
+              className="button ghost"
+              onClick={() =>
+                confirm(
+                  `Usar meta fixa de ${data.profile.kcal} kcal? O historico e os demais dados serao preservados.`,
+                  () => db.profile.update('profile', { mode: 'fixed' }),
+                )
+              }
+            >
+              Usar meta fixa
+            </button>
+          )}
           <button className="button primary" disabled={saving}>
             <Save size={17} />
             Salvar perfil
@@ -171,8 +187,9 @@ export function Settings() {
               if (file.size > 20 * 1024 * 1024) throw new Error('Backup excede o limite de 20 MB.');
               const backup = backupSchema.parse(JSON.parse(await file.text()));
               confirm(
-                `Substituir todos os dados locais por este backup? ${backup.logs.length} refeicoes e ${backup.activities.length} treinos. Esta acao nao pode ser desfeita.`,
-                () => restoreBackup(backup),
+                `Substituir todos os dados locais por este backup? ${backup.logs.length} refeicoes e ${backup.activities.length} treinos. Esta acao nao pode ser desfeita.${backup.profile.mode === 'dynamic' ? ` O backup usa meta dinamica: ao confirmar, sera usada a meta fixa de ${backup.profile.kcal} kcal, pois o modo dinamico ainda nao esta disponivel na interface.` : ''}`,
+                () =>
+                  restoreBackup(backup, db, { useFixedTarget: backup.profile.mode === 'dynamic' }),
               );
             }, 'Arquivo validado; confirme a restauracao.');
           }}

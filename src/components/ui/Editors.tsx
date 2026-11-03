@@ -196,6 +196,10 @@ export function ActivityEditor({
   onClose: () => void;
 }) {
   const { day, run } = useApp();
+  const initialStart = activity
+    ? format(new Date(activity.start), "yyyy-MM-dd'T'HH:mm:ss.SSS")
+    : `${day}T18:00`;
+  const [startValue, setStartValue] = useState(initialStart);
   const [sport, setSport] = useState(activity?.sport ?? 'Musculacao');
   const [exercises, setExercises] = useState(activity?.exercises ?? []);
   const [saving, setSaving] = useState(false);
@@ -205,14 +209,16 @@ export function ActivityEditor({
     const optional = (key: string) => (form.get(key) ? Number(form.get(key)) : null);
     setSaving(true);
     const ok = await run(async () => {
-      const start = new Date(String(form.get('start')));
       const value = activitySchema.parse({
         id: activity?.id ?? crypto.randomUUID(),
         externalId: activity?.externalId ?? null,
         source: activity?.source ?? 'manual',
         name: String(form.get('name')) || sport,
         sport,
-        start: start.toISOString(),
+        start:
+          activity && startValue === initialStart
+            ? activity.start
+            : new Date(startValue).toISOString(),
         duration: Number(form.get('duration')),
         distance: optional('distance'),
         heartRate: optional('heartRate'),
@@ -258,9 +264,9 @@ export function ActivityEditor({
               name="start"
               required
               type="datetime-local"
-              defaultValue={
-                activity ? format(new Date(activity.start), "yyyy-MM-dd'T'HH:mm") : `${day}T18:00`
-              }
+              step="any"
+              value={startValue}
+              onChange={(event) => setStartValue(event.target.value)}
             />
           </label>
           <label>
@@ -269,8 +275,8 @@ export function ActivityEditor({
               name="duration"
               required
               type="number"
-              min="0.1"
-              step="0.1"
+              min="0"
+              step="any"
               defaultValue={activity?.duration}
             />
           </label>
@@ -280,7 +286,7 @@ export function ActivityEditor({
               name="distance"
               type="number"
               min="0"
-              step="0.01"
+              step="any"
               defaultValue={activity?.distance ?? ''}
             />
           </label>
@@ -290,7 +296,7 @@ export function ActivityEditor({
               name="heartRate"
               type="number"
               min="1"
-              step="1"
+              step="any"
               defaultValue={activity?.heartRate ?? ''}
             />
           </label>
@@ -300,7 +306,7 @@ export function ActivityEditor({
               name="energy"
               type="number"
               min="0"
-              step="1"
+              step="any"
               defaultValue={activity?.energy ?? ''}
               placeholder="Nao informado"
             />
