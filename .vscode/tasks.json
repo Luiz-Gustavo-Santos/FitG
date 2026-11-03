@@ -1,0 +1,80 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Testar FitG",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Formatar codigo FitG",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"prettier",
+				"--write",
+				"src",
+				"scripts",
+				"vite.config.ts",
+				"tsconfig.json",
+				"package.json",
+				"index.html",
+				".prettierrc.json"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verificar tipos FitG",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Auditar runtime FitG",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"audit",
+				"--omit=dev"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Build FitG",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Enviar commits FitG",
+			"type": "shell",
+			"command": "$root = git rev-parse --show-toplevel\nif (($LASTEXITCODE -ne 0) -or ((Resolve-Path $root).Path -ne $PWD.Path)) { throw 'Execute a tarefa na raiz do repositorio FitG.' }\n$origin = git remote get-url origin\nif ($origin -ne 'https://github.com/Luiz-Gustavo-Santos/FitG.git') { throw 'Repositorio remoto inesperado.' }\n$branch = git branch --show-current\nif ($branch -ne 'main') { throw 'Esta tarefa envia somente a branch main.' }\n$null = git rev-parse --verify --quiet HEAD\nif ($LASTEXITCODE -ne 0) {\n  git add -- .\n  if ($LASTEXITCODE -ne 0) { throw 'Falha ao preparar a base inicial.' }\n  $excluded = git ls-files --cached -- .env '.env.*' node_modules dist coverage artifacts playwright-report\n  if ($excluded) { throw 'Arquivos locais indevidos no indice; envio interrompido.' }\n  git commit -m 'chore: versionar base inicial do FitG 0.1.0'\n  if ($LASTEXITCODE -ne 0) { throw 'Falha ao criar o commit inicial.' }\n}\ngit -c credential.interactive=false push --set-upstream origin main\nif ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar commits ao GitHub.' }\n$local = git rev-parse HEAD\n$remote = git -c credential.interactive=false ls-remote origin refs/heads/main\nif (($LASTEXITCODE -ne 0) -or (($remote -split '\\s+')[0] -ne $local.Trim())) { throw 'Nao foi possivel confirmar a sincronizacao.' }\ngit --no-pager log -1 --format='%h %s'\ngit --no-pager status --short --branch",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
