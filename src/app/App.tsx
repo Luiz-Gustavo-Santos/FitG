@@ -11,14 +11,13 @@ import {
   Home as HomeIcon,
   LoaderCircle,
   Menu,
-  Plus,
   Settings as SettingsIcon,
   ShieldCheck,
   Utensils,
   WifiOff,
   X,
 } from 'lucide-react';
-import { addDays, differenceInCalendarDays, parseISO } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { initialize } from '../db';
 import { AppProvider, useAppData, type Page } from '../hooks/useAppData';
 import { dayLabel, localDay } from '../utils/dates';
@@ -171,7 +170,7 @@ export function App() {
             <strong>
               Fit<span>G</span>
             </strong>
-            <small>BUILD YOUR NEXT LEVEL</small>
+            <small>SEU RITMO. SUA EVOLUCAO.</small>
           </div>
         </a>
         <span className="nav-caption">SEU ESPACO</span>
@@ -194,7 +193,7 @@ export function App() {
           ))}
         </nav>
         <div className="sidebar-goal">
-          <span className="eyebrow">ATE 26/12</span>
+          <span className="eyebrow">ATE {format(parseISO(data.profile.endDay), 'dd/MM')}</span>
           <h3>Foco no processo.</h3>
           <p>
             Constancia transforma
@@ -308,7 +307,7 @@ export function App() {
           {page === 'settings' && <Settings />}
           {page === 'integrations' && <Integrations />}
           <footer className="page-footer">
-            <span>FitG</span>
+            <span>FitG {__APP_VERSION__}</span>
             <span>Seu ritmo. Sua evolucao.</span>
           </footer>
         </main>

@@ -2055,6 +2055,26 @@ legend {
     width: 52px;
   }
 }
+.app-update {
+  position: fixed;
+  z-index: 45;
+  right: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  width: min(420px, calc(100% - 32px));
+  padding: 16px;
+  border: 1px solid #536c40;
+  border-radius: 8px;
+  background: #15211b;
+  box-shadow: 0 8px 32px #0008;
+  font-size: 13px;
+}
+.app-update p {
+  margin: 8px 0 12px;
+  color: #b7c8bc;
+}
+.app-update .button {
+  min-height: 44px;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

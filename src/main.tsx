@@ -6,8 +6,8 @@ import '@fontsource/manrope/latin-600.css';
 import '@fontsource/manrope/latin-700.css';
 import '@fontsource/barlow-condensed/latin-600.css';
 import '@fontsource/barlow-condensed/latin-700.css';
-import { registerSW } from 'virtual:pwa-register';
 import { App } from './app/App';
+import { AppUpdate } from './components/ui/AppUpdate';
 import './app/styles.css';
 import './app/integrations.css';
 
@@ -37,7 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />
+      <AppUpdate />
     </ErrorBoundary>
   </React.StrictMode>,
 );
-registerSW({ immediate: true });
