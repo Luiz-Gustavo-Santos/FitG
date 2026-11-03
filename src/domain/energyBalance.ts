@@ -1,5 +1,5 @@
 export interface EnergyInput {
-  intake: number;
+  intake: number | null;
   fixedTarget: number;
   exercise: number | null;
   tdee: number | null;
@@ -24,6 +24,6 @@ export function energyBalance(input: EnergyInput) {
           : dynamicTdee + input.surplus,
     exercise: input.exercise,
     tdee,
-    balance: tdee === null ? null : input.intake - tdee,
+    balance: tdee === null || input.intake === null ? null : input.intake - tdee,
   };
 }

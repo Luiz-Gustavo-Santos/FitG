@@ -9,6 +9,15 @@ export function Nutrition() {
   const { data, day, openMeal, newMeal, run, confirm } = useApp();
   const summary = dailySummary(data, day);
   const sweets = data.sweets.find((record) => record.day === day);
+  const entries = [
+    ...data.meals.map((meal) => ({
+      meal,
+      log: summary.logs.find((log) => log.mealId === meal.id),
+    })),
+    ...summary.logs
+      .filter((log) => !data.meals.some((meal) => meal.id === log.mealId))
+      .map((log) => ({ meal: null, log })),
+  ];
   return (
     <>
       <div className="section-heading">
@@ -25,58 +34,65 @@ export function Nutrition() {
       </div>
       <div className="summary-strip">
         <span>
-          <strong>{number(summary.nutrients.kcal)}</strong> / {number(data.profile.kcal)} kcal
+          <strong>{summary.intake === null ? '--' : number(summary.intake)}</strong> /{' '}
+          {number(data.profile.kcal)} kcal
         </span>
-        <span>{number(summary.nutrients.protein)} g proteina</span>
+        <span>{summary.intake === null ? '--' : number(summary.nutrients.protein)} g proteina</span>
         <span>{summary.logs.length} refeicoes registradas</span>
         {summary.nutrients.unknown > 0 && <span className="warning">Valores incompletos</span>}
       </div>
       <div className="meal-grid">
-        {data.meals.map((meal) => {
-          const log = summary.logs.find((log) => log.mealId === meal.id);
-          const planned = totals(snapshot(meal.items, data.foods));
-          const consumed = log ? totals(log.items) : null;
+        {entries.map(({ meal, log }) => {
+          const items = log?.items ?? snapshot(meal!.items, data.foods);
+          const nutrients = totals(items);
+          const name = log?.name ?? meal!.name;
           return (
-            <article className={`meal-card ${log ? 'recorded' : ''}`} key={meal.id}>
+            <article
+              className={`meal-card ${log ? 'recorded' : ''}`}
+              key={log?.id ?? meal!.id}
+              aria-label={`Refeicao ${name}`}
+            >
               <div className="meal-top">
                 <span className="meal-time">
                   <Clock3 size={15} />
-                  {meal.time}
+                  {log ? 'Consumo registrado' : meal!.time}
                 </span>
-                <div className="inline-actions">
-                  <button
-                    className="icon-button"
-                    title="Editar plano"
-                    aria-label={`Editar plano ${meal.name}`}
-                    onClick={() => openMeal(meal, true)}
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    title="Excluir refeicao do plano"
-                    aria-label={`Excluir ${meal.name}`}
-                    onClick={() =>
-                      confirm(
-                        'Excluir esta refeicao do plano? Os consumos anteriores serao preservados.',
-                        () => db.meals.delete(meal.id),
-                      )
-                    }
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                {meal && (
+                  <div className="inline-actions">
+                    <button
+                      className="icon-button"
+                      title="Editar plano"
+                      aria-label={`Editar plano ${meal.name}`}
+                      onClick={() => openMeal(meal, true)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      title="Excluir refeicao do plano"
+                      aria-label={`Excluir ${meal.name}`}
+                      onClick={() =>
+                        confirm(
+                          'Excluir esta refeicao do plano? Os consumos anteriores serao preservados.',
+                          () => db.meals.delete(meal.id),
+                        )
+                      }
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
-              <h3>{meal.name}</h3>
+              <h3>{name}</h3>
+              {!meal && <p className="small muted">Refeicao fora do plano atual</p>}
               <ul className="food-list">
-                {meal.items.map((item) => {
-                  const food = data.foods.find((food) => food.id === item.foodId);
+                {items.map((item, index) => {
                   return (
-                    <li key={item.id}>
+                    <li key={index}>
                       <span>{item.name}</span>
                       <span>
                         {item.amount !== null
-                          ? `${number(item.amount, 1)} ${food?.unit ?? ''}`
+                          ? `${number(item.amount, 1)} ${item.unit}`
                           : 'A definir'}
                       </span>
                     </li>
@@ -86,11 +102,12 @@ export function Nutrition() {
               <div className="meal-bottom">
                 <div>
                   <strong>
-                    {number(consumed?.kcal ?? planned.kcal)} <small>kcal</small>
+                    {nutrients.unknown === items.length ? '--' : number(nutrients.kcal)}{' '}
+                    <small>kcal</small>
                   </strong>
                   <span className="small muted">
                     {log ? 'Consumidas' : 'Planejadas'}
-                    {(consumed ?? planned).unknown > 0 ? ' · parcial' : ' · aprox.'}
+                    {nutrients.unknown > 0 ? ' · parcial' : ' · aprox.'}
                   </span>
                 </div>
                 {log ? (
@@ -102,7 +119,7 @@ export function Nutrition() {
                     Desfazer
                   </button>
                 ) : (
-                  <button className="button primary" onClick={() => openMeal(meal)}>
+                  <button className="button primary" onClick={() => openMeal(meal!)}>
                     <Check size={17} />
                     Registrar
                   </button>

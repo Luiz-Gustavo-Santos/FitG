@@ -57,7 +57,10 @@ export function HistoryChart({
           borderRadius: 6,
           color: '#f4f8f5',
         }}
-        labelFormatter={(_, payload) => payload[0]?.payload?.day ?? ''}
+        labelFormatter={(_, payload) => {
+          const point = payload[0]?.payload;
+          return `${point?.day ?? ''}${(kind === 'calories' || kind === 'protein') && point?.intakeStatus === 'partial' ? ' · consumo parcial' : ''}`;
+        }}
       />
     </>
   );
@@ -142,8 +145,13 @@ export function HistoryChart({
         ) : (
           <div className="chart-empty">
             <ChartNoAxesCombined size={30} />
-            <span>Seu historico comeca no primeiro registro.</span>
-            <small>Nenhum dado neste periodo</small>
+            <span>
+              {(kind === 'calories' || kind === 'protein') &&
+              values.some((value) => value.intakeStatus === 'unknown')
+                ? 'Consumos registrados sem nutrientes conhecidos.'
+                : 'Seu historico comeca no primeiro registro.'}
+            </span>
+            <small>Nenhum valor conhecido neste periodo</small>
           </div>
         )}
       </div>

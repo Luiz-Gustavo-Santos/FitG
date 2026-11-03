@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { foodCatalog, initialMeals } from '../data/initialPlan';
+import { foodCatalog, initialMeals, initialProfile } from '../data/initialPlan';
+import { dailySummary, history } from './dashboard';
+import type { AppData } from '../hooks/useAppData';
 import { portionNutrients, snapshot, totals } from './nutrition';
 import { activeEnergy, duplicateKind, sweetsStats } from './activities';
 import { daySchema } from '../types';
@@ -45,4 +47,56 @@ describe('datas e registros explicitos', () => {
     expect(sweetsStats([], '2026-11-03').percent).toBeNull();
   });
   it('nao inventa energia ativa sem treinos', () => expect(activeEnergy([]).value).toBeNull());
+});
+
+describe('completude dos indicadores', () => {
+  function data(): AppData {
+    return {
+      profile: { ...initialProfile, tdee: 2500, tdeeSource: 'Estimativa manual' },
+      foods: foodCatalog,
+      meals: initialMeals,
+      logs: [],
+      activities: [],
+      weights: [],
+      sweets: [],
+    };
+  }
+  it('nao calcula deficit sem consumo registrado', () => {
+    const summary = dailySummary(data(), '2026-11-03');
+    expect(summary.intake).toBeNull();
+    expect(summary.intakeStatus).toBe('missing');
+    expect(summary.energy.balance).toBeNull();
+  });
+  it('nao transforma consumo desconhecido em zero nos graficos', () => {
+    const records = data();
+    records.logs.push({
+      id: 'log',
+      mealId: 'snack',
+      name: 'Lanche',
+      day: '2026-11-03',
+      recordedAt: '2026-11-03T10:00:00Z',
+      items: [{ name: 'Fruta', amount: null, unit: '', nutrients: null }],
+    });
+    expect(dailySummary(records, '2026-11-03').energy.balance).toBeNull();
+    expect(history(records, '2026-11-03', 1)[0]).toMatchObject({
+      intake: null,
+      protein: null,
+      intakeStatus: 'unknown',
+    });
+  });
+  it('identifica valores conhecidos parciais e preserva o saldo contra TDEE', () => {
+    const records = data();
+    records.logs.push({
+      id: 'log',
+      mealId: 'lunch',
+      name: 'Almoco',
+      day: '2026-11-03',
+      recordedAt: '2026-11-03T13:00:00Z',
+      items: snapshot(initialMeals[2].items, foodCatalog),
+    });
+    const summary = dailySummary(records, '2026-11-03');
+    expect(summary.intakeStatus).toBe('partial');
+    expect(summary.energy.balance).toBe(summary.nutrients.kcal - 2500);
+    expect(history(records, '2026-11-03', 1)[0].intakeStatus).toBe('partial');
+  });
 });

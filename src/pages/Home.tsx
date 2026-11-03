@@ -21,17 +21,15 @@ import { HistoryChart } from '../components/charts/HistoryChart';
 
 export function Home() {
   const { data, day, setPage, openActivity, openWeight, openMeal } = useApp();
-  const { nutrients, energy, exercise, logs, weight, daysLeft, activities } = dailySummary(
-    data,
-    day,
-  );
+  const { nutrients, intake, intakeStatus, energy, exercise, logs, weight, daysLeft, activities } =
+    dailySummary(data, day);
   const pending = data.meals.filter((meal) => !logs.some((log) => log.mealId === meal.id));
   const progress = energy.target ? Math.min(100, (nutrients.kcal / energy.target) * 100) : 0;
   return (
     <>
       <div className="home-greeting">
         <div>
-          <span className="eyebrow">PROJETO 26 DE DEZEMBRO</span>
+          <span className="eyebrow">SEU PROJETO DE EVOLUCAO</span>
           <h2>
             Construa sua <em>melhor versao.</em>
           </h2>
@@ -67,12 +65,16 @@ export function Home() {
             <div
               className="calorie-ring"
               role="img"
-              aria-label={`${number(progress)} por cento da meta calorica`}
+              aria-label={
+                intake === null
+                  ? 'Consumo nao informado'
+                  : `${number(progress)} por cento da meta calorica registrada`
+              }
               style={{ '--progress': `${progress}%` } as React.CSSProperties}
             >
               <div>
                 <Flame size={23} />
-                <strong>{number(nutrients.kcal)}</strong>
+                <strong>{intake === null ? '--' : number(intake)}</strong>
                 <span>de {energy.target === null ? '?' : number(energy.target)} kcal</span>
               </div>
             </div>
@@ -109,7 +111,7 @@ export function Home() {
                 <div>
                   <span>{macro.label}</span>
                   <strong>
-                    {number(nutrients[macro.key])}
+                    {intake === null ? '--' : number(nutrients[macro.key])}
                     <small> / {data.profile[macro.key]} g</small>
                   </strong>
                 </div>
@@ -137,8 +139,11 @@ export function Home() {
               Consumo registrado
             </span>
             <strong>
-              {number(nutrients.kcal)}
-              {nutrients.unknown > 0 ? '*' : ''}
+              {intake === null
+                ? intakeStatus === 'unknown'
+                  ? 'Desconhecido'
+                  : 'Sem registros'
+                : `${number(intake)}${nutrients.unknown > 0 ? ' (parcial)' : ''}`}
             </strong>
           </div>
           <div className="balance-row">
@@ -168,18 +173,25 @@ export function Home() {
           </div>
           <div className="balance-total">
             <div>
-              <span>Saldo energetico{nutrients.unknown > 0 ? ' parcial' : ''}</span>
+              <span>Saldo energetico{energy.balance !== null ? ' parcial' : ''}</span>
               <strong>
                 {energy.balance === null
                   ? '--'
                   : `${energy.balance > 0 ? '+' : ''}${number(energy.balance)}`}
-                <small>{energy.balance === null ? ' TDEE necessario' : ' kcal'}</small>
+                <small>
+                  {energy.balance === null
+                    ? energy.tdee === null
+                      ? ' TDEE necessario'
+                      : ' Consumo necessario'
+                    : ' kcal'}
+                </small>
               </strong>
             </div>
             <ArrowUpRight size={24} />
           </div>
           <p className="method-note">
-            Ingestao menos gasto diario total (TDEE).{' '}
+            Ingestao registrada menos gasto diario total (TDEE). O saldo nao confirma o fechamento
+            do dia.{' '}
             {data.profile.mode === 'fixed'
               ? 'O treino nao aumenta a meta fixa.'
               : 'A meta dinamica requer atividade incremental confirmada.'}{' '}
@@ -193,7 +205,7 @@ export function Home() {
             icon: Utensils,
             label: 'Refeicoes registradas',
             value: `${logs.length}`,
-            unit: `/ ${data.meals.length}`,
+            unit: 'registros',
             detail: 'Seu ritmo de hoje',
             action: () => setPage('nutrition'),
           },

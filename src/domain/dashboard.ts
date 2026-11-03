@@ -10,10 +10,17 @@ export function dailySummary(data: AppData, day: string) {
   const activities = data.activities.filter(
     (activity) => localDay(new Date(activity.start)) === day,
   );
-  const nutrients = totals(logs.flatMap((log) => log.items));
+  const items = logs.flatMap((log) => log.items);
+  const nutrients = totals(items);
+  const known = items.length - nutrients.unknown;
+  const intake = known ? nutrients.kcal : null;
+  let intakeStatus: 'missing' | 'unknown' | 'partial' | 'recorded' = 'recorded';
+  if (!items.length) intakeStatus = 'missing';
+  else if (!known) intakeStatus = 'unknown';
+  else if (nutrients.unknown) intakeStatus = 'partial';
   const exercise = activeEnergy(activities);
   const energy = energyBalance({
-    intake: nutrients.kcal,
+    intake,
     fixedTarget: data.profile.kcal,
     exercise: exercise.value,
     tdee: data.profile.tdee,
@@ -27,6 +34,8 @@ export function dailySummary(data: AppData, day: string) {
     logs,
     activities,
     nutrients,
+    intake,
+    intakeStatus,
     exercise,
     energy,
     weight,
@@ -40,8 +49,9 @@ export function history(data: AppData, day: string, count: number) {
     return {
       day: date,
       label: date.slice(8),
-      intake: summary.logs.length ? Math.round(summary.nutrients.kcal) : null,
-      protein: summary.logs.length ? Math.round(summary.nutrients.protein) : null,
+      intake: summary.intake === null ? null : Math.round(summary.intake),
+      protein: summary.intake === null ? null : Math.round(summary.nutrients.protein),
+      intakeStatus: summary.intakeStatus,
       tdee: summary.energy.tdee,
       workouts: summary.activities.length,
       weight: data.weights.find((record) => record.day === date)?.kg ?? null,
